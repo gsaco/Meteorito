@@ -1,0 +1,23 @@
+﻿variable,tipo_python,descripcion,nulos
+name,string,Nombre original del meteorito,0
+id,int64,Identificador único del registro,0
+name_type,string,"Categoría original del nombre, conservada sin reclasificación",0
+class,string,Clasificación original,0
+mass,float64,Masa original registrada (gramos),131
+fall,string,Found: hallazgo; Fell: caída observada,0
+year,float64,Año original registrado,291
+lat,float64,Latitud original en grados,7315
+long,float64,Longitud original en grados,7315
+geolocation,object,Texto original de coordenadas; para análisis se usan lat y long,7315
+es_terrestre,bool,"False solo para Meridiani Planum (id 32789), encontrado en Marte",0
+estado_coordenadas,object,"Ausentes, ambas cero, fuera de rango o utilizables",0
+coordenadas_utilizables,bool,"Coordenadas presentes, en rango y distintas de (0,0)",0
+masa_positiva,bool,Masa estrictamente mayor que cero,0
+masa_kg,float64,Masa original en gramos dividida entre 1000,131
+log10_masa_g,float64,Logaritmo base diez de masa positiva en gramos; vacío en otros casos,150
+anio,Int64,Año entero entre 1 y 2026; vacío si ausente o inválido,292
+fecha_anual,period[Y-DEC],Periodo anual; se exporta como texto y no inventa día ni mes,292
+decada,Int64,"Década del año utilizable, expresada por su año inicial",292
+tipo_registro,object,Etiqueta española de fall,0
+franja_latitud,category,Franja de 30 grados con pd.cut; solo coordenadas utilizables,13530
+region_antartica,string,Antártida si latitud < -60; resto si no; vacío sin coordenadas utilizables,13530

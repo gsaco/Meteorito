@@ -1,0 +1,50 @@
+# Instalar en .github/workflows/deploy-pages.yml del repositorio de destino.
+# Ajustar la rama si su rama principal tiene otro nombre.
+name: Publicar Meteoritos en GitHub Pages
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'atlas_meteoritos/**'
+      - '.github/workflows/deploy-pages.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: github-pages
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: atlas_meteoritos/package-lock.json
+      - name: Instalar dependencias
+        run: npm ci
+        working-directory: atlas_meteoritos
+      - name: Comprobar datos
+        run: npm test
+        working-directory: atlas_meteoritos
+      - name: Compilar la web
+        run: npm run build
+        working-directory: atlas_meteoritos
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: atlas_meteoritos/dist
+      - name: Publicar
+        id: deployment
+        uses: actions/deploy-pages@v4
