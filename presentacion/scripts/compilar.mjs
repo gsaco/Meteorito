@@ -25,6 +25,7 @@ execFileSync("python3", [path.join(root, "scripts/preparar_quarto.py")], {
 });
 // Content fingerprints prevent the browser from reusing a previous edition.
 const hash = (bytes) => createHash("sha256").update(bytes).digest("hex").slice(0, 12);
+await import("./generar_qr.mjs");
 const assetHash = createHash("sha256");
 for (const file of fs.readdirSync(path.join(root, "assets")).sort()) {
   const fullPath = path.join(root, "assets", file);

@@ -72,3 +72,7 @@ Esta edición renueva la composición de la presentación en Quarto. Usa Space G
 `src/Globe.jsx` dibuja la proyección y los puntos reales. `src/Explorers.jsx` contiene las interacciones explicativas. Los gráficos estáticos se regeneran con la paleta oscura en `scripts/figuras_oscuras.py`; este paso opcional requiere Cartopy, Matplotlib, pandas y la cartografía local de `entrega_meteoritos`. Las cinco imágenes resultantes ya están incluidas y no necesitan Python para mostrarse.
 
 Fuentes técnicas: [Quarto](https://quarto.org/docs/presentations/revealjs/) y [Motion para React](https://motion.dev/docs/react-animation).
+
+## Acceso al atlas
+
+El botón «Abrir Meteoritos» de la barra superior abre el atlas en otra pestaña. La última diapositiva incluye además un QR con el mismo enlace: https://gsaco.github.io/Meteorito/. El QR se genera localmente durante la compilación mediante `scripts/generar_qr.mjs`.

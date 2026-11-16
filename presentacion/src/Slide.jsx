@@ -5,6 +5,32 @@ import Mapa from "./Mapa";
 import Globe from "./Globe";
 import { Enter, Comparison, Process, CodeExplorer, MassLab } from "./Explorers";
 
+const ATLAS_URL = "https://gsaco.github.io/Meteorito/";
+
+function AtlasLink({ className = "" }) {
+  return (
+    <a className={`atlas-open ${className}`} href={ATLAS_URL}
+       target="_blank" rel="noopener noreferrer"
+       aria-label="Abrir Meteoritos en una pestaña nueva">
+      Abrir Meteoritos <ExternalLink size={17} aria-hidden="true" />
+    </a>
+  );
+}
+
+function AtlasQR() {
+  return (
+    <div className="atlas-access">
+      <img src="assets/qr-meteoritos.svg" width="172" height="172"
+           alt="Código QR para abrir https://gsaco.github.io/Meteorito/" />
+      <div>
+        <span className="micro">EXPLORA EL ATLAS</span>
+        <p>Escanea con tu celular o abre la interfaz.</p>
+        <AtlasLink />
+      </div>
+    </div>
+  );
+}
+
 const authors = [
   "Richard Michel Altamirano Galvez",
   "Gabriel Andreas Saco Alvarado",
@@ -31,6 +57,7 @@ export function ChapterNav({ index }) {
             {c.label}
           </button>
         ))}
+        <AtlasLink className="atlas-nav-link" />
       </div>
     </nav>
   );
@@ -115,6 +142,7 @@ export default function Slide({ s, index, data, world, error, active }) {
             <strong>{s.metric}</strong>
             <span className="metric-label">{s.label}</span>
             <p>{s.insight}</p>
+            {index === content.slides.length - 1 && <AtlasQR />}
           </Enter>
         </div>
       ) : s.kind === "stats" ? (
