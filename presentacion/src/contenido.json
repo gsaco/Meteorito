@@ -1,0 +1,4922 @@
+{
+  "slides": [
+    {
+      "title": "METEORITOS",
+      "kind": "cover",
+      "subtitle": "Análisis de un catálogo histórico y desarrollo de un atlas interactivo",
+      "image": "atlas_general.jpg",
+      "notes": "Presentar el proyecto del curso Herramientas de Programación con Python. Duración prevista: 20–25 minutos. Los datos corresponden a la copia histórica entregada, no a una descarga actualizada. Integrantes: Richard Michel Altamirano Galvez, Gabriel Andreas Saco Alvarado y Fina Rosmery Pretil Pocomucha. La portada usa una proyección ortográfica D3 con las 32 186 coordenadas utilizables, incluyendo registros sin año. El giro se puede pausar o controlar arrastrando. Fuente cartográfica: Natural Earth. Docente: Uwe Rojas."
+    },
+    {
+      "title": "Encontrados y vistos caer",
+      "kind": "text",
+      "lead": "¿Qué patrones geográficos, temporales y de masa aparecen en el catálogo?",
+      "items": [
+        [
+          "Found",
+          "Meteoritos encontrados después de su caída."
+        ],
+        [
+          "Fell",
+          "Meteoritos cuya caída fue observada."
+        ]
+      ],
+      "foot": "El año de un hallazgo puede diferir del año de caída.",
+      "notes": "Explicar por qué separar Found y Fell cambia la interpretación. El catálogo documenta recuperaciones y observaciones, no una tasa mundial de impactos. Fuente: informe, sección 2; NASA, Meteors & Meteorites Facts, https://science.nasa.gov/solar-system/meteors-meteorites/facts/"
+    },
+    {
+      "title": "La unidad de análisis es un registro",
+      "kind": "stats",
+      "metrics": [
+        [
+          "45 716",
+          "filas originales"
+        ],
+        [
+          "10",
+          "variables originales"
+        ],
+        [
+          "45 715",
+          "registros terrestres"
+        ]
+      ],
+      "lead": "Una tabla principal, identificada por id.",
+      "items": [
+        [
+          "Contenido",
+          "Nombre, clase, masa, tipo, año y coordenadas."
+        ],
+        [
+          "Integridad",
+          "Identificadores únicos y columnas originales conservadas."
+        ]
+      ],
+      "notes": "El registro Meridiani Planum corresponde a Marte y se excluye solo de la muestra terrestre. No equiparar cada registro con un impacto independiente. Fuente: CSV original y Excel, Calidad. TidyTuesday https://github.com/rfordatascience/tidytuesday/tree/main/data/2019/2019-06-11"
+    },
+    {
+      "title": "La limpieza conserva la trazabilidad",
+      "kind": "code",
+      "code": "terrestres = datos.loc[datos[\"id\"].ne(32789)].copy()\n\nmasas = terrestres.loc[terrestres[\"mass\"].gt(0)]\n\n# Cada pregunta utiliza su muestra válida.\n# El archivo original permanece intacto.",
+      "items": [
+        [
+          "Base terrestre",
+          "Se excluye Meridiani Planum (Marte) y se crea una copia."
+        ],
+        [
+          "Masa positiva",
+          "Se filtra mass > 0: no se imputan masas ausentes ni ceros."
+        ],
+        [
+          "Muestras por pregunta",
+          "Las reglas de coordenadas y año se aplican según el análisis."
+        ]
+      ],
+      "notes": "Código pedagógico simplificado de las reglas efectivas del notebook. La base preparada conserva las 45 716 filas. Las muestras se filtran por pregunta. No se imputan coordenadas ni masas. Fuente: notebook y hoja Calidad.",
+      "foot": "CSV original: 131 masas ausentes y 19 ceros. Coordenadas (0, 0) no mapeables; año 2101 inválido."
+    },
+    {
+      "title": "Flujo de trabajo del proyecto",
+      "kind": "pipeline",
+      "items": [
+        [
+          "Carga",
+          "CSV y diccionario"
+        ],
+        [
+          "Unión",
+          "Llave y pertinencia"
+        ],
+        [
+          "Limpieza",
+          "Tipos y faltantes"
+        ],
+        [
+          "Transformación",
+          "Variables y tablas"
+        ],
+        [
+          "Análisis",
+          "Preguntas y gráficos"
+        ],
+        [
+          "Conclusiones",
+          "Hallazgos y límites"
+        ]
+      ],
+      "code": "original = pd.read_csv(ruta)\noriginal.head(); original.info()\noriginal.describe()\n# groupby · pivot_table · melt\n# Matplotlib: figuras P1–P10",
+      "notes": "El proyecto tiene una sola tabla de observaciones. El diccionario y Natural Earth son recursos auxiliares. Por ello, el requisito condicional de tres merges no aplica. Los cálculos alimentan el notebook, el informe y el atlas. Seguir las seis etapas de la consigna. Unión: no aplica a una única tabla de observaciones; comprobar id y conservación de filas. P9 ahora incluye melt, exportación larga y reconstrucción verificada."
+    },
+    {
+      "title": "Funciones pequeñas, resultados verificables",
+      "kind": "code",
+      "code": "def resumir_por_grupo(datos, columna):\n    return datos.groupby(columna).agg(\n        registros=(\"id\", \"size\"),\n        masa_mediana_g=(\"mass\", \"median\"),\n        masa_media_g=(\"mass\", \"mean\"),\n    )",
+      "items": [
+        [
+          "Parámetros",
+          "La tabla y la columna de agrupación entran como argumentos."
+        ],
+        [
+          "Resumen por grupo",
+          "size cuenta registros; median y mean resumen la masa."
+        ],
+        [
+          "Retorno",
+          "Devuelve una tabla que se puede reutilizar y exportar."
+        ]
+      ],
+      "foot": "El análisis también utiliza pivot_table, crosstab y melt (P9), además de pd.cut.",
+      "notes": "Explicar parámetros, retorno y reutilización. No es una transcripción literal de la función más completa del notebook. Se utilizan cinco funciones principales y rutinas cartográficas. Fuente: anexo B y notebook."
+    },
+    {
+      "title": "P1 · La cobertura geográfica es desigual",
+      "kind": "figure",
+      "image": "01_mapa_mundial.png",
+      "metric": "32 186",
+      "label": "registros con ubicación utilizable",
+      "insight": "La cobertura alcanza 99,0 % en Fell y 69,7 % en Found.",
+      "foot": "Base terrestre: 45 715. Ubicación no utilizable: 13 529.",
+      "notes": "Fuente: hoja P1_tipo_y_mapa. Mapa Equal Earth con Cartopy y Natural Earth. La densidad refleja observación y recuperación, además de disponibilidad de coordenadas. https://www.naturalearthdata.com/; https://cartopy.readthedocs.io/"
+    },
+    {
+      "title": "P2 · La Antártida concentra los hallazgos",
+      "kind": "figure",
+      "image": "02_antartida.png",
+      "metric": "22 099",
+      "label": "registros al sur de 60° S",
+      "insight": "48,3 % de la base terrestre y 68,7 % de los registros mapeables.",
+      "foot": "Todos son Found. Entre los Found mapeables representan 71,1 %.",
+      "notes": "La conservación, exposición y búsqueda organizada ayudan a interpretar la concentración. El catálogo no permite atribuir causalmente cuánto aporta cada mecanismo. Fuente: P2_antartida_conteos; Tollenaar et al. (2022), https://doi.org/10.1126/sciadv.abj8138"
+    },
+    {
+      "title": "P3 · El crecimiento describe registros",
+      "kind": "chart",
+      "chart": "decadas",
+      "image": "03_registros_decada.png",
+      "metric": "17 756",
+      "label": "registros en la década de 2000",
+      "insight": "Las campañas de recuperación influyen en la serie histórica.",
+      "foot": "Desde 1800. La década de 2010 está incompleta: el archivo llega a 2013.",
+      "notes": "Fuente: hoja P3_decadas. El gráfico conserva Found y Fell separados. Los 60 registros anteriores a 1800 permanecen en Excel. No interpretar la serie como frecuencia anual de impactos."
+    },
+    {
+      "title": "P4 · L6 es la clase más frecuente",
+      "kind": "chart",
+      "chart": "clases",
+      "image": "04_clases_frecuentes.png",
+      "metric": "8 339",
+      "label": "registros de clase L6",
+      "insight": "L6 representa 18,2 % de los 45 715 registros terrestres.",
+      "foot": "Diez clases más frecuentes. Cada barra cuenta entradas del catálogo.",
+      "notes": "Fuente: hoja P4_clases. Los códigos se conservan tal como aparecen en la fuente. El patrón depende de clasificación, preservación y muestreo. Tipos: ASU, https://meteorites.asu.edu/meteorite-types"
+    },
+    {
+      "title": "P5 · La masa tiene una cola muy larga",
+      "kind": "chart",
+      "chart": "histograma",
+      "image": "05_histograma_masas.png",
+      "metric": "32,70 g",
+      "label": "mediana de masa positiva",
+      "insight": "La media asciende a 13 283,62 g por la presencia de valores muy grandes.",
+      "foot": "45 566 masas positivas. Histograma de log₁₀(masa en gramos).",
+      "notes": "Fuente: P5_histograma y P5_estadisticas. Son 40 intervalos. La transformación permite observar varios órdenes de magnitud sin sumar constantes ni reemplazar ceros."
+    },
+    {
+      "title": "P6 · Las masas típicas difieren",
+      "kind": "quartiles",
+      "image": "06_cajas_masa_tipo.png",
+      "metric": "91,7×",
+      "label": "razón entre medianas",
+      "insight": "Mediana Fell: 2 800 g. Mediana Found: 30,54 g.",
+      "foot": "44 491 Found y 1 075 Fell con masa positiva. Diferencia descriptiva.",
+      "notes": "Fuente: P6_masa_por_tipo. Los cuartiles y la mediana describen diferencias entre tipos. La lámina conserva el diagrama de caja del análisis, incluidos los valores atípicos. Sesgos de observación y recuperación impiden interpretar la diferencia como efecto causal."
+    },
+    {
+      "title": "P7 · Hoba encabeza el ranking",
+      "kind": "chart",
+      "chart": "ranking",
+      "image": "07_mas_pesados.png",
+      "metric": "60 t",
+      "label": "masa catalogada de Hoba",
+      "insight": "Los diez registros mayores reúnen 57,1 % de la masa positiva.",
+      "foot": "Masa registrada por entrada. No equivale a la masa previa a la entrada atmosférica.",
+      "notes": "Fuente: P7_mayores_masas y P5_estadisticas. El gráfico usa toneladas. Cada entrada puede referirse a material recuperado y no necesariamente a un único fragmento."
+    },
+    {
+      "title": "P8 · Año y masa tienen poca asociación",
+      "kind": "association",
+      "image": "08_anio_masa.png",
+      "metric": "ρ ≈ 0",
+      "label": "asociación de rangos débil",
+      "insight": "Found: 0,049. Fell: 0,026.",
+      "foot": "Desde 1800. 44 203 Found y 1 040 Fell con masa positiva y año utilizable.",
+      "notes": "Fuente: P8_asociacion. Spearman mide asociación monótona. La lámina muestra las nubes de puntos completas, con masa logarítmica. No sustenta causalidad ni ausencia de toda relación posible."
+    },
+    {
+      "title": "P9 · La composición cambia entre décadas",
+      "kind": "heatmap",
+      "image": "09_clases_decadas.png",
+      "metric": "17,4 %",
+      "label": "participación de L5 en 2000",
+      "insight": "En 1970, L5 representaba 1,9 %. El cambio es de 15,5 puntos porcentuales.",
+      "foot": "Porcentaje dentro de cada década. 2010 está incompleta.",
+      "notes": "Fuente: P9_clases_pct. Cada columna suma 100 %. No son porcentajes del catálogo total. Una mayor participación puede responder a campañas, clasificación y lugares de recuperación."
+    },
+    {
+      "title": "P10 · Tres registros corresponden al Perú",
+      "kind": "figure",
+      "image": "10_peru_carancas.png",
+      "metric": "Carancas",
+      "label": "Fell, 2007, 342 g catalogados",
+      "insight": "También se identifican Cerro La Tiza y Tambo Quemado.",
+      "foot": "Natural Earth 1:10 millones y validación documental de Carancas.",
+      "notes": "Fuente: P10_peru_candidatos. La frontera 1:110 millones excluía erróneamente Carancas. Se conserva esa comprobación para auditoría y se usa 1:10 millones junto con ASU. Daule corresponde a Ecuador. https://meteorites.asu.edu/news/carancas"
+    }
+  ],
+  "tables": {
+    "P1_tipo_y_mapa": [
+      {
+        "tipo_registro": "Encontrado",
+        "registros": 44608,
+        "registros_mapeables": 31090,
+        "cobertura_mapa_pct": 69.69601865136299
+      },
+      {
+        "tipo_registro": "Visto caer",
+        "registros": 1107,
+        "registros_mapeables": 1096,
+        "cobertura_mapa_pct": 99.0063233965673
+      }
+    ],
+    "P2_antartida_conteos": [
+      {
+        "tipo_registro": "Encontrado",
+        "Región antártica": 22099,
+        "Resto del mundo": 8991
+      },
+      {
+        "tipo_registro": "Visto caer",
+        "Región antártica": 0,
+        "Resto del mundo": 1096
+      }
+    ],
+    "P2_antartida_pct": [
+      {
+        "tipo_registro": "Encontrado",
+        "Región antártica": 71.08073335477646,
+        "Resto del mundo": 28.91926664522354
+      },
+      {
+        "tipo_registro": "Visto caer",
+        "Región antártica": 0.0,
+        "Resto del mundo": 100.0
+      }
+    ],
+    "P2_franjas": [
+      {
+        "franja_latitud": "90–60° S",
+        "registros": 22099,
+        "masas_positivas": 22097,
+        "masa_mediana_g": 13.43,
+        "masa_media_g": 175.8918350907363,
+        "porcentaje": 68.66028708133972
+      },
+      {
+        "franja_latitud": "0–30° N",
+        "registros": 5815,
+        "masas_positivas": 5796,
+        "masa_mediana_g": 261.325,
+        "masa_media_g": 19275.71680883368,
+        "porcentaje": 18.06686136829677
+      },
+      {
+        "franja_latitud": "30–60° N",
+        "registros": 2680,
+        "masas_positivas": 2583,
+        "masa_mediana_g": 1990.0,
+        "masa_media_g": 68965.10944638017,
+        "porcentaje": 8.326601628037034
+      },
+      {
+        "franja_latitud": "30–0° S",
+        "registros": 929,
+        "masas_positivas": 918,
+        "masa_mediana_g": 151.0,
+        "masa_media_g": 211018.9266350762,
+        "porcentaje": 2.886348101659106
+      },
+      {
+        "franja_latitud": "60–30° S",
+        "registros": 608,
+        "masas_positivas": 602,
+        "masa_mediana_g": 133.5,
+        "masa_media_g": 74074.17518272426,
+        "porcentaje": 1.889020070838253
+      },
+      {
+        "franja_latitud": "60–90° N",
+        "registros": 55,
+        "masas_positivas": 54,
+        "masa_mediana_g": 2375.0,
+        "masa_media_g": 1144663.685185185,
+        "porcentaje": 0.1708817498291182
+      }
+    ],
+    "P3_decadas": [
+      {
+        "decada": 860,
+        "Encontrado": 0,
+        "Visto caer": 1
+      },
+      {
+        "decada": 920,
+        "Encontrado": 0,
+        "Visto caer": 1
+      },
+      {
+        "decada": 1390,
+        "Encontrado": 0,
+        "Visto caer": 1
+      },
+      {
+        "decada": 1490,
+        "Encontrado": 0,
+        "Visto caer": 3
+      },
+      {
+        "decada": 1510,
+        "Encontrado": 0,
+        "Visto caer": 1
+      },
+      {
+        "decada": 1570,
+        "Encontrado": 1,
+        "Visto caer": 0
+      },
+      {
+        "decada": 1580,
+        "Encontrado": 0,
+        "Visto caer": 1
+      },
+      {
+        "decada": 1600,
+        "Encontrado": 1,
+        "Visto caer": 0
+      },
+      {
+        "decada": 1620,
+        "Encontrado": 0,
+        "Visto caer": 3
+      },
+      {
+        "decada": 1630,
+        "Encontrado": 0,
+        "Visto caer": 3
+      },
+      {
+        "decada": 1640,
+        "Encontrado": 0,
+        "Visto caer": 1
+      },
+      {
+        "decada": 1650,
+        "Encontrado": 0,
+        "Visto caer": 1
+      },
+      {
+        "decada": 1660,
+        "Encontrado": 0,
+        "Visto caer": 2
+      },
+      {
+        "decada": 1670,
+        "Encontrado": 0,
+        "Visto caer": 1
+      },
+      {
+        "decada": 1680,
+        "Encontrado": 0,
+        "Visto caer": 1
+      },
+      {
+        "decada": 1700,
+        "Encontrado": 0,
+        "Visto caer": 1
+      },
+      {
+        "decada": 1710,
+        "Encontrado": 1,
+        "Visto caer": 1
+      },
+      {
+        "decada": 1720,
+        "Encontrado": 1,
+        "Visto caer": 1
+      },
+      {
+        "decada": 1740,
+        "Encontrado": 1,
+        "Visto caer": 2
+      },
+      {
+        "decada": 1750,
+        "Encontrado": 0,
+        "Visto caer": 4
+      },
+      {
+        "decada": 1760,
+        "Encontrado": 0,
+        "Visto caer": 4
+      },
+      {
+        "decada": 1770,
+        "Encontrado": 1,
+        "Visto caer": 4
+      },
+      {
+        "decada": 1780,
+        "Encontrado": 3,
+        "Visto caer": 2
+      },
+      {
+        "decada": 1790,
+        "Encontrado": 3,
+        "Visto caer": 9
+      },
+      {
+        "decada": 1800,
+        "Encontrado": 5,
+        "Visto caer": 17
+      },
+      {
+        "decada": 1810,
+        "Encontrado": 6,
+        "Visto caer": 24
+      },
+      {
+        "decada": 1820,
+        "Encontrado": 5,
+        "Visto caer": 25
+      },
+      {
+        "decada": 1830,
+        "Encontrado": 12,
+        "Visto caer": 21
+      },
+      {
+        "decada": 1840,
+        "Encontrado": 18,
+        "Visto caer": 31
+      },
+      {
+        "decada": 1850,
+        "Encontrado": 35,
+        "Visto caer": 36
+      },
+      {
+        "decada": 1860,
+        "Encontrado": 39,
+        "Visto caer": 56
+      },
+      {
+        "decada": 1870,
+        "Encontrado": 38,
+        "Visto caer": 51
+      },
+      {
+        "decada": 1880,
+        "Encontrado": 83,
+        "Visto caer": 40
+      },
+      {
+        "decada": 1890,
+        "Encontrado": 75,
+        "Visto caer": 51
+      },
+      {
+        "decada": 1900,
+        "Encontrado": 83,
+        "Visto caer": 56
+      },
+      {
+        "decada": 1910,
+        "Encontrado": 88,
+        "Visto caer": 66
+      },
+      {
+        "decada": 1920,
+        "Encontrado": 89,
+        "Visto caer": 70
+      },
+      {
+        "decada": 1930,
+        "Encontrado": 218,
+        "Visto caer": 91
+      },
+      {
+        "decada": 1940,
+        "Encontrado": 138,
+        "Visto caer": 58
+      },
+      {
+        "decada": 1950,
+        "Encontrado": 152,
+        "Visto caer": 60
+      },
+      {
+        "decada": 1960,
+        "Encontrado": 335,
+        "Visto caer": 62
+      },
+      {
+        "decada": 1970,
+        "Encontrado": 4909,
+        "Visto caer": 60
+      },
+      {
+        "decada": 1980,
+        "Encontrado": 6766,
+        "Visto caer": 56
+      },
+      {
+        "decada": 1990,
+        "Encontrado": 11563,
+        "Visto caer": 56
+      },
+      {
+        "decada": 2000,
+        "Encontrado": 17697,
+        "Visto caer": 59
+      },
+      {
+        "decada": 2010,
+        "Encontrado": 1950,
+        "Visto caer": 13
+      }
+    ],
+    "P4_clases": [
+      {
+        "class": "L6",
+        "registros": 8339,
+        "masas_positivas": 8333,
+        "masa_mediana_g": 35.37,
+        "masa_media_g": 1441.241695067803,
+        "porcentaje": 18.24127748003938
+      },
+      {
+        "class": "H5",
+        "registros": 7164,
+        "masas_positivas": 7160,
+        "masa_mediana_g": 24.66,
+        "masa_media_g": 2161.99072849162,
+        "porcentaje": 15.67100514054468
+      },
+      {
+        "class": "L5",
+        "registros": 4817,
+        "masas_positivas": 4815,
+        "masa_mediana_g": 31.81,
+        "masa_media_g": 1789.569304880582,
+        "porcentaje": 10.53702285901783
+      },
+      {
+        "class": "H6",
+        "registros": 4529,
+        "masas_positivas": 4528,
+        "masa_mediana_g": 18.95,
+        "masa_media_g": 862.1772782685513,
+        "porcentaje": 9.907032702614021
+      },
+      {
+        "class": "H4",
+        "registros": 4222,
+        "masas_positivas": 4222,
+        "masa_mediana_g": 18.4,
+        "masa_media_g": 994.8434355755567,
+        "porcentaje": 9.23548069561413
+      },
+      {
+        "class": "LL5",
+        "registros": 2766,
+        "masas_positivas": 2766,
+        "masa_mediana_g": 16.2,
+        "masa_media_g": 464.6758839479392,
+        "porcentaje": 6.050530460461555
+      },
+      {
+        "class": "LL6",
+        "registros": 2045,
+        "masas_positivas": 2045,
+        "masa_mediana_g": 30.8,
+        "masa_media_g": 691.3023041564793,
+        "porcentaje": 4.473367603631194
+      },
+      {
+        "class": "L4",
+        "registros": 1256,
+        "masas_positivas": 1256,
+        "masa_mediana_g": 69.65,
+        "masa_media_g": 1632.130566878981,
+        "porcentaje": 2.747457070983266
+      },
+      {
+        "class": "H4/5",
+        "registros": 428,
+        "masas_positivas": 428,
+        "masa_mediana_g": 10.69,
+        "masa_media_g": 1601.557908878505,
+        "porcentaje": 0.936235371322323
+      },
+      {
+        "class": "CM2",
+        "registros": 416,
+        "masas_positivas": 414,
+        "masa_mediana_g": 9.45,
+        "masa_media_g": 368.379615942029,
+        "porcentaje": 0.9099857814721645
+      },
+      {
+        "class": "H3",
+        "registros": 387,
+        "masas_positivas": 387,
+        "masa_mediana_g": 20.51,
+        "masa_media_g": 794.0485891472869,
+        "porcentaje": 0.8465492726676146
+      },
+      {
+        "class": "L3",
+        "registros": 365,
+        "masas_positivas": 365,
+        "masa_mediana_g": 44.3,
+        "masa_media_g": 1534.44678630137,
+        "porcentaje": 0.7984250246089905
+      },
+      {
+        "class": "CO3",
+        "registros": 336,
+        "masas_positivas": 335,
+        "masa_mediana_g": 18.3,
+        "masa_media_g": 511.2393582089552,
+        "porcentaje": 0.7349885158044406
+      },
+      {
+        "class": "Ureilite",
+        "registros": 300,
+        "masas_positivas": 300,
+        "masa_mediana_g": 77.75999999999999,
+        "masa_media_g": 490.0149,
+        "porcentaje": 0.6562397462539648
+      },
+      {
+        "class": "Iron, IIIAB",
+        "registros": 285,
+        "masas_positivas": 284,
+        "masa_mediana_g": 16060.0,
+        "masa_media_g": 488805.946971831,
+        "porcentaje": 0.6234277589412666
+      },
+      {
+        "class": "LL4",
+        "registros": 268,
+        "masas_positivas": 268,
+        "masa_mediana_g": 115.14,
+        "masa_media_g": 874.7136940298507,
+        "porcentaje": 0.5862408399868752
+      },
+      {
+        "class": "CV3",
+        "registros": 256,
+        "masas_positivas": 256,
+        "masa_mediana_g": 72.65,
+        "masa_media_g": 8953.69018359375,
+        "porcentaje": 0.5599912501367166
+      },
+      {
+        "class": "Diogenite",
+        "registros": 241,
+        "masas_positivas": 241,
+        "masa_mediana_g": 48.8,
+        "masa_media_g": 899.4614522821577,
+        "porcentaje": 0.5271792628240184
+      },
+      {
+        "class": "Howardite",
+        "registros": 240,
+        "masas_positivas": 240,
+        "masa_mediana_g": 76.75,
+        "masa_media_g": 652.054125,
+        "porcentaje": 0.5249917970031718
+      },
+      {
+        "class": "LL",
+        "registros": 225,
+        "masas_positivas": 225,
+        "masa_mediana_g": 7.66,
+        "masa_media_g": 103.2102222222222,
+        "porcentaje": 0.4921798096904736
+      },
+      {
+        "class": "Eucrite",
+        "registros": 221,
+        "masas_positivas": 221,
+        "masa_mediana_g": 132.0,
+        "masa_media_g": 436.1987647058824,
+        "porcentaje": 0.4834299464070874
+      },
+      {
+        "class": "Eucrite-pmict",
+        "registros": 207,
+        "masas_positivas": 207,
+        "masa_mediana_g": 140.0,
+        "masa_media_g": 481.8213043478261,
+        "porcentaje": 0.4528054249152357
+      },
+      {
+        "class": "E3",
+        "registros": 206,
+        "masas_positivas": 206,
+        "masa_mediana_g": 0.795,
+        "masa_media_g": 2.387621359223301,
+        "porcentaje": 0.4506179590943892
+      },
+      {
+        "class": "H5/6",
+        "registros": 193,
+        "masas_positivas": 193,
+        "masa_mediana_g": 164.0,
+        "masa_media_g": 837.3940414507772,
+        "porcentaje": 0.422180903423384
+      },
+      {
+        "class": "Mesosiderite",
+        "registros": 137,
+        "masas_positivas": 136,
+        "masa_mediana_g": 106.35,
+        "masa_media_g": 4135.128588235294,
+        "porcentaje": 0.2996828174559772
+      },
+      {
+        "class": "CR2",
+        "registros": 135,
+        "masas_positivas": 135,
+        "masa_mediana_g": 36.5,
+        "masa_media_g": 226.8968888888889,
+        "porcentaje": 0.2953078858142841
+      },
+      {
+        "class": "LL3",
+        "registros": 128,
+        "masas_positivas": 128,
+        "masa_mediana_g": 68.375,
+        "masa_media_g": 448.2764296875,
+        "porcentaje": 0.2799956250683583
+      },
+      {
+        "class": "EH3",
+        "registros": 120,
+        "masas_positivas": 120,
+        "masa_mediana_g": 50.5,
+        "masa_media_g": 293.8635833333333,
+        "porcentaje": 0.2624958985015859
+      },
+      {
+        "class": "Iron, IIAB",
+        "registros": 118,
+        "masas_positivas": 117,
+        "masa_mediana_g": 10200.0,
+        "masa_media_g": 322715.8601709402,
+        "porcentaje": 0.2581209668598928
+      },
+      {
+        "class": "Iron, ungrouped",
+        "registros": 113,
+        "masas_positivas": 113,
+        "masa_mediana_g": 6000.0,
+        "masa_media_g": 422159.3985840708,
+        "porcentaje": 0.2471836377556601
+      },
+      {
+        "class": "H~5",
+        "registros": 111,
+        "masas_positivas": 111,
+        "masa_mediana_g": 61.7,
+        "masa_media_g": 820.3205405405406,
+        "porcentaje": 0.242808706113967
+      },
+      {
+        "class": "L5/6",
+        "registros": 109,
+        "masas_positivas": 109,
+        "masa_mediana_g": 200.0,
+        "masa_media_g": 2302.949357798165,
+        "porcentaje": 0.2384337744722739
+      },
+      {
+        "class": "Eucrite-mmict",
+        "registros": 108,
+        "masas_positivas": 108,
+        "masa_mediana_g": 165.775,
+        "masa_media_g": 5963.286018518519,
+        "porcentaje": 0.2362463086514273
+      },
+      {
+        "class": "Martian (shergottite)",
+        "registros": 99,
+        "masas_positivas": 99,
+        "masa_mediana_g": 82.46,
+        "masa_media_g": 879.0285353535353,
+        "porcentaje": 0.2165591162638084
+      },
+      {
+        "class": "Iron",
+        "registros": 94,
+        "masas_positivas": 76,
+        "masa_mediana_g": 436.0,
+        "masa_media_g": 32316.30578947369,
+        "porcentaje": 0.2056217871595756
+      },
+      {
+        "class": "CK5",
+        "registros": 94,
+        "masas_positivas": 94,
+        "masa_mediana_g": 29.05,
+        "masa_media_g": 131.5678723404255,
+        "porcentaje": 0.2056217871595756
+      },
+      {
+        "class": "L~6",
+        "registros": 94,
+        "masas_positivas": 94,
+        "masa_mediana_g": 127.5,
+        "masa_media_g": 555.9021276595745,
+        "porcentaje": 0.2056217871595756
+      },
+      {
+        "class": "L3.5",
+        "registros": 88,
+        "masas_positivas": 88,
+        "masa_mediana_g": 24.0,
+        "masa_media_g": 561.3556818181819,
+        "porcentaje": 0.1924969922344963
+      },
+      {
+        "class": "H",
+        "registros": 84,
+        "masas_positivas": 82,
+        "masa_mediana_g": 98.575,
+        "masa_media_g": 3537.492841463415,
+        "porcentaje": 0.1837471289511101
+      },
+      {
+        "class": "Iron, IAB-MG",
+        "registros": 84,
+        "masas_positivas": 83,
+        "masa_mediana_g": 12880.0,
+        "masa_media_g": 1301547.231325301,
+        "porcentaje": 0.1837471289511101
+      },
+      {
+        "class": "Eucrite-br",
+        "registros": 80,
+        "masas_positivas": 80,
+        "masa_mediana_g": 48.8,
+        "masa_media_g": 179.689,
+        "porcentaje": 0.1749972656677239
+      },
+      {
+        "class": "OC",
+        "registros": 79,
+        "masas_positivas": 73,
+        "masa_mediana_g": 550.0,
+        "masa_media_g": 3133.017534246575,
+        "porcentaje": 0.1728097998468774
+      },
+      {
+        "class": "H3.8",
+        "registros": 76,
+        "masas_positivas": 76,
+        "masa_mediana_g": 129.85,
+        "masa_media_g": 1473.991052631579,
+        "porcentaje": 0.1662474023843377
+      },
+      {
+        "class": "H3.7",
+        "registros": 75,
+        "masas_positivas": 75,
+        "masa_mediana_g": 108.07,
+        "masa_media_g": 3635.498266666666,
+        "porcentaje": 0.1640599365634912
+      },
+      {
+        "class": "CK4",
+        "registros": 75,
+        "masas_positivas": 75,
+        "masa_mediana_g": 28.77,
+        "masa_media_g": 1276.9618,
+        "porcentaje": 0.1640599365634912
+      },
+      {
+        "class": "EL6",
+        "registros": 73,
+        "masas_positivas": 73,
+        "masa_mediana_g": 140.0,
+        "masa_media_g": 1967.157589041096,
+        "porcentaje": 0.1596850049217981
+      },
+      {
+        "class": "Lunar (anorth)",
+        "registros": 69,
+        "masas_positivas": 69,
+        "masa_mediana_g": 36.7,
+        "masa_media_g": 147.8678260869565,
+        "porcentaje": 0.1509351416384119
+      },
+      {
+        "class": "Iron, IVA",
+        "registros": 69,
+        "masas_positivas": 67,
+        "masa_mediana_g": 11500.0,
+        "masa_media_g": 463545.4791044776,
+        "porcentaje": 0.1509351416384119
+      },
+      {
+        "class": "H4-6",
+        "registros": 67,
+        "masas_positivas": 67,
+        "masa_mediana_g": 127.2,
+        "masa_media_g": 1615.707313432836,
+        "porcentaje": 0.1465602099967188
+      },
+      {
+        "class": "L3.8",
+        "registros": 66,
+        "masas_positivas": 66,
+        "masa_mediana_g": 159.09,
+        "masa_media_g": 828.0681818181819,
+        "porcentaje": 0.1443727441758723
+      },
+      {
+        "class": "Relict OC",
+        "registros": 65,
+        "masas_positivas": 0,
+        "masa_mediana_g": "",
+        "masa_media_g": "",
+        "porcentaje": 0.1421852783550257
+      },
+      {
+        "class": "H5-6",
+        "registros": 63,
+        "masas_positivas": 63,
+        "masa_mediana_g": 113.0,
+        "masa_media_g": 2883.487301587302,
+        "porcentaje": 0.1378103467133326
+      },
+      {
+        "class": "Aubrite",
+        "registros": 63,
+        "masas_positivas": 63,
+        "masa_mediana_g": 159.9,
+        "masa_media_g": 67150.61333333333,
+        "porcentaje": 0.1378103467133326
+      },
+      {
+        "class": "L4/5",
+        "registros": 59,
+        "masas_positivas": 59,
+        "masa_mediana_g": 312.0,
+        "masa_media_g": 1666.98520338983,
+        "porcentaje": 0.1290604834299464
+      },
+      {
+        "class": "Achondrite-ung",
+        "registros": 57,
+        "masas_positivas": 57,
+        "masa_mediana_g": 136.0,
+        "masa_media_g": 895.8456140350877,
+        "porcentaje": 0.1246855517882533
+      },
+      {
+        "class": "LL-melt breccia",
+        "registros": 54,
+        "masas_positivas": 54,
+        "masa_mediana_g": 7.8,
+        "masa_media_g": 44.50611111111111,
+        "porcentaje": 0.1181231543257137
+      },
+      {
+        "class": "Acapulcoite",
+        "registros": 54,
+        "masas_positivas": 54,
+        "masa_mediana_g": 50.625,
+        "masa_media_g": 490.4244074074074,
+        "porcentaje": 0.1181231543257137
+      },
+      {
+        "class": "Iron, IAB complex",
+        "registros": 53,
+        "masas_positivas": 51,
+        "masa_mediana_g": 2715.0,
+        "masa_media_g": 180809.1978431373,
+        "porcentaje": 0.1159356885048671
+      },
+      {
+        "class": "L3.4",
+        "registros": 51,
+        "masas_positivas": 51,
+        "masa_mediana_g": 21.0,
+        "masa_media_g": 273.9950980392157,
+        "porcentaje": 0.111560756863174
+      },
+      {
+        "class": "Stone-uncl",
+        "registros": 50,
+        "masas_positivas": 30,
+        "masa_mediana_g": 1778.0,
+        "masa_media_g": 10750.52833333333,
+        "porcentaje": 0.1093732910423275
+      },
+      {
+        "class": "L",
+        "registros": 50,
+        "masas_positivas": 50,
+        "masa_mediana_g": 352.0,
+        "masa_media_g": 3130.59006,
+        "porcentaje": 0.1093732910423275
+      },
+      {
+        "class": "L3.7",
+        "registros": 49,
+        "masas_positivas": 49,
+        "masa_mediana_g": 110.0,
+        "masa_media_g": 1082.17,
+        "porcentaje": 0.1071858252214809
+      },
+      {
+        "class": "L3.6",
+        "registros": 48,
+        "masas_positivas": 48,
+        "masa_mediana_g": 107.975,
+        "masa_media_g": 1773.059583333333,
+        "porcentaje": 0.1049983594006344
+      },
+      {
+        "class": "LL5/6",
+        "registros": 48,
+        "masas_positivas": 48,
+        "masa_mediana_g": 9.225000000000001,
+        "masa_media_g": 162.35625,
+        "porcentaje": 0.1049983594006344
+      },
+      {
+        "class": "H4-5",
+        "registros": 47,
+        "masas_positivas": 47,
+        "masa_mediana_g": 301.2,
+        "masa_media_g": 747.896744680851,
+        "porcentaje": 0.1028108935797878
+      },
+      {
+        "class": "Iron, IAB-ung",
+        "registros": 46,
+        "masas_positivas": 46,
+        "masa_mediana_g": 3740.0,
+        "masa_media_g": 686004.9673913043,
+        "porcentaje": 0.1006234277589413
+      },
+      {
+        "class": "H3.9",
+        "registros": 43,
+        "masas_positivas": 43,
+        "masa_mediana_g": 182.0,
+        "masa_media_g": 836.2806976744185,
+        "porcentaje": 0.09406103029640162
+      },
+      {
+        "class": "H3-6",
+        "registros": 43,
+        "masas_positivas": 43,
+        "masa_mediana_g": 65.0,
+        "masa_media_g": 6941.478372093024,
+        "porcentaje": 0.09406103029640162
+      },
+      {
+        "class": "H3.6",
+        "registros": 42,
+        "masas_positivas": 42,
+        "masa_mediana_g": 63.715,
+        "masa_media_g": 7203.912714285713,
+        "porcentaje": 0.09187356447555507
+      },
+      {
+        "class": "R4",
+        "registros": 42,
+        "masas_positivas": 42,
+        "masa_mediana_g": 118.75,
+        "masa_media_g": 226.0461904761905,
+        "porcentaje": 0.09187356447555507
+      },
+      {
+        "class": "L5-6",
+        "registros": 41,
+        "masas_positivas": 41,
+        "masa_mediana_g": 435.8,
+        "masa_media_g": 8938.002195121951,
+        "porcentaje": 0.08968609865470852
+      },
+      {
+        "class": "Lunar",
+        "registros": 41,
+        "masas_positivas": 41,
+        "masa_mediana_g": 128.8,
+        "masa_media_g": 536.849268292683,
+        "porcentaje": 0.08968609865470852
+      },
+      {
+        "class": "LL5-6",
+        "registros": 40,
+        "masas_positivas": 40,
+        "masa_mediana_g": 370.5,
+        "masa_media_g": 917.4825000000001,
+        "porcentaje": 0.08749863283386197
+      },
+      {
+        "class": "Lodranite",
+        "registros": 40,
+        "masas_positivas": 40,
+        "masa_mediana_g": 56.275,
+        "masa_media_g": 268.9335,
+        "porcentaje": 0.08749863283386197
+      },
+      {
+        "class": "H3-5",
+        "registros": 39,
+        "masas_positivas": 39,
+        "masa_mediana_g": 210.0,
+        "masa_media_g": 1565.574102564103,
+        "porcentaje": 0.08531116701301542
+      },
+      {
+        "class": "Pallasite, PMG",
+        "registros": 38,
+        "masas_positivas": 38,
+        "masa_mediana_g": 10100.0,
+        "masa_media_g": 147304.7368421053,
+        "porcentaje": 0.08312370119216887
+      },
+      {
+        "class": "Pallasite",
+        "registros": 35,
+        "masas_positivas": 35,
+        "masa_mediana_g": 3000.0,
+        "masa_media_g": 6319.56,
+        "porcentaje": 0.07656130372962923
+      },
+      {
+        "class": "H3/4",
+        "registros": 35,
+        "masas_positivas": 35,
+        "masa_mediana_g": 25.091,
+        "masa_media_g": 514.5274571428571,
+        "porcentaje": 0.07656130372962923
+      },
+      {
+        "class": "LL4-6",
+        "registros": 34,
+        "masas_positivas": 34,
+        "masa_mediana_g": 158.5,
+        "masa_media_g": 927.0535294117647,
+        "porcentaje": 0.07437383790878267
+      },
+      {
+        "class": "L4-6",
+        "registros": 33,
+        "masas_positivas": 33,
+        "masa_mediana_g": 299.0,
+        "masa_media_g": 70540.4712121212,
+        "porcentaje": 0.07218637208793613
+      },
+      {
+        "class": "Brachinite",
+        "registros": 33,
+        "masas_positivas": 33,
+        "masa_mediana_g": 196.0,
+        "masa_media_g": 565.0403030303031,
+        "porcentaje": 0.07218637208793613
+      },
+      {
+        "class": "L~5",
+        "registros": 32,
+        "masas_positivas": 32,
+        "masa_mediana_g": 98.775,
+        "masa_media_g": 805.2615625,
+        "porcentaje": 0.06999890626708957
+      },
+      {
+        "class": "Eucrite-unbr",
+        "registros": 32,
+        "masas_positivas": 32,
+        "masa_mediana_g": 23.385,
+        "masa_media_g": 89.05875,
+        "porcentaje": 0.06999890626708957
+      },
+      {
+        "class": "L3-6",
+        "registros": 32,
+        "masas_positivas": 32,
+        "masa_mediana_g": 213.5,
+        "masa_media_g": 3800.45625,
+        "porcentaje": 0.06999890626708957
+      },
+      {
+        "class": "LL3.8",
+        "registros": 28,
+        "masas_positivas": 28,
+        "masa_mediana_g": 140.6,
+        "masa_media_g": 603.8921428571429,
+        "porcentaje": 0.06124904298370338
+      },
+      {
+        "class": "Iron, IAB-sLL",
+        "registros": 28,
+        "masas_positivas": 27,
+        "masa_mediana_g": 3300.0,
+        "masa_media_g": 164194.6407407407,
+        "porcentaje": 0.06124904298370338
+      },
+      {
+        "class": "Lunar (feldsp. breccia)",
+        "registros": 27,
+        "masas_positivas": 27,
+        "masa_mediana_g": 113.0,
+        "masa_media_g": 500.5888888888889,
+        "porcentaje": 0.05906157716285683
+      },
+      {
+        "class": "L3.9",
+        "registros": 27,
+        "masas_positivas": 27,
+        "masa_mediana_g": 92.0,
+        "masa_media_g": 1513.546666666667,
+        "porcentaje": 0.05906157716285683
+      },
+      {
+        "class": "Eucrite-cm",
+        "registros": 26,
+        "masas_positivas": 26,
+        "masa_mediana_g": 212.905,
+        "masa_media_g": 2063.807692307692,
+        "porcentaje": 0.05687411134201028
+      },
+      {
+        "class": "L/LL6",
+        "registros": 26,
+        "masas_positivas": 26,
+        "masa_mediana_g": 540.5,
+        "masa_media_g": 12365.51076923077,
+        "porcentaje": 0.05687411134201028
+      },
+      {
+        "class": "L/LL3",
+        "registros": 26,
+        "masas_positivas": 26,
+        "masa_mediana_g": 41.77,
+        "masa_media_g": 357.93,
+        "porcentaje": 0.05687411134201028
+      },
+      {
+        "class": "LL3.7",
+        "registros": 26,
+        "masas_positivas": 26,
+        "masa_mediana_g": 251.0,
+        "masa_media_g": 3452.726538461538,
+        "porcentaje": 0.05687411134201028
+      },
+      {
+        "class": "Winonaite",
+        "registros": 25,
+        "masas_positivas": 25,
+        "masa_mediana_g": 52.0,
+        "masa_media_g": 1129.0132,
+        "porcentaje": 0.05468664552116373
+      },
+      {
+        "class": "L-imp melt",
+        "registros": 25,
+        "masas_positivas": 25,
+        "masa_mediana_g": 68.3,
+        "masa_media_g": 948.5056,
+        "porcentaje": 0.05468664552116373
+      },
+      {
+        "class": "L4-5",
+        "registros": 24,
+        "masas_positivas": 24,
+        "masa_mediana_g": 464.0,
+        "masa_media_g": 9275.753333333332,
+        "porcentaje": 0.05249917970031718
+      },
+      {
+        "class": "Ureilite-pmict",
+        "registros": 23,
+        "masas_positivas": 23,
+        "masa_mediana_g": 57.0,
+        "masa_media_g": 262.6856521739131,
+        "porcentaje": 0.05031171387947064
+      },
+      {
+        "class": "H~6",
+        "registros": 22,
+        "masas_positivas": 22,
+        "masa_mediana_g": 104.515,
+        "masa_media_g": 791.4463636363636,
+        "porcentaje": 0.04812424805862409
+      },
+      {
+        "class": "LL7",
+        "registros": 22,
+        "masas_positivas": 22,
+        "masa_mediana_g": 66.25999999999999,
+        "masa_media_g": 200.2345454545454,
+        "porcentaje": 0.04812424805862409
+      },
+      {
+        "class": "CH3",
+        "registros": 22,
+        "masas_positivas": 22,
+        "masa_mediana_g": 48.005,
+        "masa_media_g": 216.925,
+        "porcentaje": 0.04812424805862409
+      },
+      {
+        "class": "L-melt rock",
+        "registros": 21,
+        "masas_positivas": 21,
+        "masa_mediana_g": 95.0,
+        "masa_media_g": 2268.984761904762,
+        "porcentaje": 0.04593678223777754
+      },
+      {
+        "class": "L7",
+        "registros": 21,
+        "masas_positivas": 21,
+        "masa_mediana_g": 5.7,
+        "masa_media_g": 661.4038095238096,
+        "porcentaje": 0.04593678223777754
+      },
+      {
+        "class": "Angrite",
+        "registros": 21,
+        "masas_positivas": 21,
+        "masa_mediana_g": 392.0,
+        "masa_media_g": 1382.37,
+        "porcentaje": 0.04593678223777754
+      },
+      {
+        "class": "LL3.4",
+        "registros": 20,
+        "masas_positivas": 20,
+        "masa_mediana_g": 49.1,
+        "masa_media_g": 1283.823,
+        "porcentaje": 0.04374931641693099
+      },
+      {
+        "class": "L/LL4",
+        "registros": 20,
+        "masas_positivas": 20,
+        "masa_mediana_g": 408.0,
+        "masa_media_g": 22547.43335,
+        "porcentaje": 0.04374931641693099
+      },
+      {
+        "class": "R5",
+        "registros": 20,
+        "masas_positivas": 20,
+        "masa_mediana_g": 84.4,
+        "masa_media_g": 1359.824,
+        "porcentaje": 0.04374931641693099
+      },
+      {
+        "class": "Iron, IID",
+        "registros": 19,
+        "masas_positivas": 19,
+        "masa_mediana_g": 13600.0,
+        "masa_media_g": 67423.61578947368,
+        "porcentaje": 0.04156185059608444
+      },
+      {
+        "class": "CM1",
+        "registros": 19,
+        "masas_positivas": 19,
+        "masa_mediana_g": 2.5,
+        "masa_media_g": 45.68578947368421,
+        "porcentaje": 0.04156185059608444
+      },
+      {
+        "class": "EL3",
+        "registros": 19,
+        "masas_positivas": 19,
+        "masa_mediana_g": 20.6,
+        "masa_media_g": 135.7494736842105,
+        "porcentaje": 0.04156185059608444
+      },
+      {
+        "class": "EH4",
+        "registros": 18,
+        "masas_positivas": 18,
+        "masa_mediana_g": 23.575,
+        "masa_media_g": 7701.782222222221,
+        "porcentaje": 0.03937438477523789
+      },
+      {
+        "class": "CM1/2",
+        "registros": 18,
+        "masas_positivas": 18,
+        "masa_mediana_g": 2.3,
+        "masa_media_g": 175.7994444444444,
+        "porcentaje": 0.03937438477523789
+      },
+      {
+        "class": "H3.5",
+        "registros": 18,
+        "masas_positivas": 18,
+        "masa_mediana_g": 76.57499999999999,
+        "masa_media_g": 838.1905555555555,
+        "porcentaje": 0.03937438477523789
+      },
+      {
+        "class": "H~4",
+        "registros": 18,
+        "masas_positivas": 18,
+        "masa_mediana_g": 281.25,
+        "masa_media_g": 592.6888888888889,
+        "porcentaje": 0.03937438477523789
+      },
+      {
+        "class": "LL3.5",
+        "registros": 17,
+        "masas_positivas": 17,
+        "masa_mediana_g": 56.02,
+        "masa_media_g": 390.4858823529412,
+        "porcentaje": 0.03718691895439134
+      },
+      {
+        "class": "CK6",
+        "registros": 17,
+        "masas_positivas": 17,
+        "masa_mediana_g": 31.0,
+        "masa_media_g": 103.3223529411765,
+        "porcentaje": 0.03718691895439134
+      },
+      {
+        "class": "LL3.6",
+        "registros": 17,
+        "masas_positivas": 17,
+        "masa_mediana_g": 136.44,
+        "masa_media_g": 4852.049411764706,
+        "porcentaje": 0.03718691895439134
+      },
+      {
+        "class": "Iron, IAB-sHL",
+        "registros": 17,
+        "masas_positivas": 17,
+        "masa_mediana_g": 1250.0,
+        "masa_media_g": 9438.261176470589,
+        "porcentaje": 0.03718691895439134
+      },
+      {
+        "class": "L3.3",
+        "registros": 17,
+        "masas_positivas": 17,
+        "masa_mediana_g": 40.0,
+        "masa_media_g": 442.1258823529412,
+        "porcentaje": 0.03718691895439134
+      },
+      {
+        "class": "Lunar (basalt)",
+        "registros": 16,
+        "masas_positivas": 16,
+        "masa_mediana_g": 118.6,
+        "masa_media_g": 1027.10875,
+        "porcentaje": 0.03499945313354479
+      },
+      {
+        "class": "LL3.9",
+        "registros": 16,
+        "masas_positivas": 16,
+        "masa_mediana_g": 185.0,
+        "masa_media_g": 1586.9525,
+        "porcentaje": 0.03499945313354479
+      },
+      {
+        "class": "L/LL5",
+        "registros": 16,
+        "masas_positivas": 16,
+        "masa_mediana_g": 341.7,
+        "masa_media_g": 39847.48125,
+        "porcentaje": 0.03499945313354479
+      },
+      {
+        "class": "H3.4",
+        "registros": 16,
+        "masas_positivas": 16,
+        "masa_mediana_g": 177.2935,
+        "masa_media_g": 652.2410625,
+        "porcentaje": 0.03499945313354479
+      },
+      {
+        "class": "L3.2",
+        "registros": 15,
+        "masas_positivas": 15,
+        "masa_mediana_g": 59.4,
+        "masa_media_g": 1153.791333333333,
+        "porcentaje": 0.03281198731269824
+      },
+      {
+        "class": "LL3.3",
+        "registros": 15,
+        "masas_positivas": 15,
+        "masa_mediana_g": 230.0,
+        "masa_media_g": 645.5566666666667,
+        "porcentaje": 0.03281198731269824
+      },
+      {
+        "class": "Chondrite-ung",
+        "registros": 15,
+        "masas_positivas": 15,
+        "masa_mediana_g": 143.03,
+        "masa_media_g": 997.562,
+        "porcentaje": 0.03281198731269824
+      },
+      {
+        "class": "R3",
+        "registros": 15,
+        "masas_positivas": 15,
+        "masa_mediana_g": 35.0,
+        "masa_media_g": 87.74066666666667,
+        "porcentaje": 0.03281198731269824
+      },
+      {
+        "class": "Iron, IIE",
+        "registros": 14,
+        "masas_positivas": 14,
+        "masa_mediana_g": 1655.0,
+        "masa_media_g": 42413.0,
+        "porcentaje": 0.03062452149185169
+      },
+      {
+        "class": "Iron, IIIE",
+        "registros": 14,
+        "masas_positivas": 14,
+        "masa_mediana_g": 47250.0,
+        "masa_media_g": 2076114.428571429,
+        "porcentaje": 0.03062452149185169
+      },
+      {
+        "class": "LL3.2",
+        "registros": 14,
+        "masas_positivas": 14,
+        "masa_mediana_g": 344.5,
+        "masa_media_g": 4478.73,
+        "porcentaje": 0.03062452149185169
+      },
+      {
+        "class": "C2-ung",
+        "registros": 14,
+        "masas_positivas": 14,
+        "masa_mediana_g": 253.93,
+        "masa_media_g": 1129.101428571429,
+        "porcentaje": 0.03062452149185169
+      },
+      {
+        "class": "Martian (nakhlite)",
+        "registros": 14,
+        "masas_positivas": 14,
+        "masa_mediana_g": 454.3,
+        "masa_media_g": 2058.714285714286,
+        "porcentaje": 0.03062452149185169
+      },
+      {
+        "class": "Iron, IVB",
+        "registros": 14,
+        "masas_positivas": 14,
+        "masa_mediana_g": 33110.0,
+        "masa_media_g": 4322832.857142857,
+        "porcentaje": 0.03062452149185169
+      },
+      {
+        "class": "L-melt breccia",
+        "registros": 14,
+        "masas_positivas": 14,
+        "masa_mediana_g": 60.485,
+        "masa_media_g": 237.87,
+        "porcentaje": 0.03062452149185169
+      },
+      {
+        "class": "EL4",
+        "registros": 13,
+        "masas_positivas": 13,
+        "masa_mediana_g": 22.4,
+        "masa_media_g": 234.9761538461539,
+        "porcentaje": 0.02843705567100514
+      },
+      {
+        "class": "L3.1",
+        "registros": 13,
+        "masas_positivas": 13,
+        "masa_mediana_g": 269.8,
+        "masa_media_g": 876.1438461538462,
+        "porcentaje": 0.02843705567100514
+      },
+      {
+        "class": "CK3",
+        "registros": 13,
+        "masas_positivas": 13,
+        "masa_mediana_g": 91.94,
+        "masa_media_g": 214.6569230769231,
+        "porcentaje": 0.02843705567100514
+      },
+      {
+        "class": "L3-5",
+        "registros": 13,
+        "masas_positivas": 13,
+        "masa_mediana_g": 346.0,
+        "masa_media_g": 945.6923076923077,
+        "porcentaje": 0.02843705567100514
+      },
+      {
+        "class": "H/L4",
+        "registros": 13,
+        "masas_positivas": 13,
+        "masa_mediana_g": 87.0,
+        "masa_media_g": 1456.988461538461,
+        "porcentaje": 0.02843705567100514
+      },
+      {
+        "class": "CK4/5",
+        "registros": 12,
+        "masas_positivas": 12,
+        "masa_mediana_g": 120.45,
+        "masa_media_g": 241.5658333333333,
+        "porcentaje": 0.02624958985015859
+      },
+      {
+        "class": "H7",
+        "registros": 12,
+        "masas_positivas": 12,
+        "masa_mediana_g": 75.815,
+        "masa_media_g": 228.4666666666667,
+        "porcentaje": 0.02624958985015859
+      },
+      {
+        "class": "L3/4",
+        "registros": 12,
+        "masas_positivas": 12,
+        "masa_mediana_g": 88.0,
+        "masa_media_g": 156.0591666666667,
+        "porcentaje": 0.02624958985015859
+      },
+      {
+        "class": "CO3.5",
+        "registros": 12,
+        "masas_positivas": 12,
+        "masa_mediana_g": 375.0,
+        "masa_media_g": 4799.423333333333,
+        "porcentaje": 0.02624958985015859
+      },
+      {
+        "class": "C3-ung",
+        "registros": 12,
+        "masas_positivas": 12,
+        "masa_mediana_g": 192.4,
+        "masa_media_g": 617.5666666666667,
+        "porcentaje": 0.02624958985015859
+      },
+      {
+        "class": "H-imp melt",
+        "registros": 11,
+        "masas_positivas": 11,
+        "masa_mediana_g": 3.2,
+        "masa_media_g": 11.86,
+        "porcentaje": 0.02406212402931204
+      },
+      {
+        "class": "Diogenite-pm",
+        "registros": 11,
+        "masas_positivas": 11,
+        "masa_mediana_g": 117.8,
+        "masa_media_g": 2209.545454545455,
+        "porcentaje": 0.02406212402931204
+      },
+      {
+        "class": "H/L6",
+        "registros": 11,
+        "masas_positivas": 11,
+        "masa_mediana_g": 88.1,
+        "masa_media_g": 86.2209090909091,
+        "porcentaje": 0.02406212402931204
+      },
+      {
+        "class": "Pallasite, PMG-an",
+        "registros": 11,
+        "masas_positivas": 11,
+        "masa_mediana_g": 17000.0,
+        "masa_media_g": 685358.9090909091,
+        "porcentaje": 0.02406212402931204
+      },
+      {
+        "class": "L6-melt breccia",
+        "registros": 10,
+        "masas_positivas": 10,
+        "masa_mediana_g": 388.7,
+        "masa_media_g": 844.3399999999999,
+        "porcentaje": 0.02187465820846549
+      },
+      {
+        "class": "R3-6",
+        "registros": 10,
+        "masas_positivas": 10,
+        "masa_mediana_g": 85.0,
+        "masa_media_g": 204.45,
+        "porcentaje": 0.02187465820846549
+      },
+      {
+        "class": "L~4",
+        "registros": 10,
+        "masas_positivas": 10,
+        "masa_mediana_g": 132.15,
+        "masa_media_g": 376.18,
+        "porcentaje": 0.02187465820846549
+      },
+      {
+        "class": "Iron, IC",
+        "registros": 10,
+        "masas_positivas": 10,
+        "masa_mediana_g": 396850.0,
+        "masa_media_g": 892556.3,
+        "porcentaje": 0.02187465820846549
+      },
+      {
+        "class": "Iron, IAB-sLM",
+        "registros": 10,
+        "masas_positivas": 10,
+        "masa_mediana_g": 10100.0,
+        "masa_media_g": 19816.1,
+        "porcentaje": 0.02187465820846549
+      },
+      {
+        "class": "H4-an",
+        "registros": 10,
+        "masas_positivas": 10,
+        "masa_mediana_g": 207.805,
+        "masa_media_g": 312.901,
+        "porcentaje": 0.02187465820846549
+      },
+      {
+        "class": "H3-4",
+        "registros": 10,
+        "masas_positivas": 10,
+        "masa_mediana_g": 345.5,
+        "masa_media_g": 9010.016,
+        "porcentaje": 0.02187465820846549
+      },
+      {
+        "class": "LL4-5",
+        "registros": 10,
+        "masas_positivas": 10,
+        "masa_mediana_g": 119.0,
+        "masa_media_g": 199.65,
+        "porcentaje": 0.02187465820846549
+      },
+      {
+        "class": "CI1",
+        "registros": 9,
+        "masas_positivas": 9,
+        "masa_mediana_g": 12.206,
+        "masa_media_g": 2390.192888888889,
+        "porcentaje": 0.01968719238761894
+      },
+      {
+        "class": "LL~5",
+        "registros": 9,
+        "masas_positivas": 9,
+        "masa_mediana_g": 17.4,
+        "masa_media_g": 60.53222222222222,
+        "porcentaje": 0.01968719238761894
+      },
+      {
+        "class": "LL3-6",
+        "registros": 9,
+        "masas_positivas": 9,
+        "masa_mediana_g": 450.0,
+        "masa_media_g": 2142.635555555556,
+        "porcentaje": 0.01968719238761894
+      },
+      {
+        "class": "L3.8-6",
+        "registros": 9,
+        "masas_positivas": 9,
+        "masa_mediana_g": 64.8,
+        "masa_media_g": 340.3333333333333,
+        "porcentaje": 0.01968719238761894
+      },
+      {
+        "class": "Iron, IAB-sLH",
+        "registros": 9,
+        "masas_positivas": 9,
+        "masa_mediana_g": 268.0,
+        "masa_media_g": 7382.566666666668,
+        "porcentaje": 0.01968719238761894
+      },
+      {
+        "class": "EH4/5",
+        "registros": 9,
+        "masas_positivas": 9,
+        "masa_mediana_g": 26.0,
+        "masa_media_g": 39.28888888888889,
+        "porcentaje": 0.01968719238761894
+      },
+      {
+        "class": "R6",
+        "registros": 9,
+        "masas_positivas": 9,
+        "masa_mediana_g": 30.59,
+        "masa_media_g": 61.89111111111111,
+        "porcentaje": 0.01968719238761894
+      },
+      {
+        "class": "R3.8",
+        "registros": 9,
+        "masas_positivas": 9,
+        "masa_mediana_g": 134.0,
+        "masa_media_g": 301.3466666666666,
+        "porcentaje": 0.01968719238761894
+      },
+      {
+        "class": "L6/7",
+        "registros": 9,
+        "masas_positivas": 9,
+        "masa_mediana_g": 77.68,
+        "masa_media_g": 5855.368888888889,
+        "porcentaje": 0.01968719238761894
+      },
+      {
+        "class": "Achondrite-prim",
+        "registros": 9,
+        "masas_positivas": 9,
+        "masa_mediana_g": 678.0,
+        "masa_media_g": 1078.0,
+        "porcentaje": 0.01968719238761894
+      },
+      {
+        "class": "Iron, IIIF",
+        "registros": 9,
+        "masas_positivas": 9,
+        "masa_mediana_g": 17000.0,
+        "masa_media_g": 55777.26666666667,
+        "porcentaje": 0.01968719238761894
+      },
+      {
+        "class": "E6",
+        "registros": 9,
+        "masas_positivas": 9,
+        "masa_mediana_g": 65.0,
+        "masa_media_g": 345.2577777777778,
+        "porcentaje": 0.01968719238761894
+      },
+      {
+        "class": "Diogenite-olivine",
+        "registros": 9,
+        "masas_positivas": 9,
+        "masa_mediana_g": 500.0,
+        "masa_media_g": 747.5777777777778,
+        "porcentaje": 0.01968719238761894
+      },
+      {
+        "class": "CB",
+        "registros": 8,
+        "masas_positivas": 8,
+        "masa_mediana_g": 2.25,
+        "masa_media_g": 97.425,
+        "porcentaje": 0.01749972656677239
+      },
+      {
+        "class": "CO3.2",
+        "registros": 8,
+        "masas_positivas": 8,
+        "masa_mediana_g": 513.5,
+        "masa_media_g": 25598.88875,
+        "porcentaje": 0.01749972656677239
+      },
+      {
+        "class": "CR",
+        "registros": 8,
+        "masas_positivas": 8,
+        "masa_mediana_g": 135.0,
+        "masa_media_g": 271.8225,
+        "porcentaje": 0.01749972656677239
+      },
+      {
+        "class": "Iron, IIC",
+        "registros": 8,
+        "masas_positivas": 8,
+        "masa_mediana_g": 14350.0,
+        "masa_media_g": 26483.375,
+        "porcentaje": 0.01749972656677239
+      },
+      {
+        "class": "C",
+        "registros": 8,
+        "masas_positivas": 8,
+        "masa_mediana_g": 33.33,
+        "masa_media_g": 156.4475,
+        "porcentaje": 0.01749972656677239
+      },
+      {
+        "class": "H-melt rock",
+        "registros": 8,
+        "masas_positivas": 8,
+        "masa_mediana_g": 18.05,
+        "masa_media_g": 121.8375,
+        "porcentaje": 0.01749972656677239
+      },
+      {
+        "class": "OC3",
+        "registros": 8,
+        "masas_positivas": 8,
+        "masa_mediana_g": 67.95,
+        "masa_media_g": 940.7625,
+        "porcentaje": 0.01749972656677239
+      },
+      {
+        "class": "Mesosiderite-C",
+        "registros": 7,
+        "masas_positivas": 7,
+        "masa_mediana_g": 1624.0,
+        "masa_media_g": 34843.85714285714,
+        "porcentaje": 0.01531226074592584
+      },
+      {
+        "class": "CO3.6",
+        "registros": 7,
+        "masas_positivas": 6,
+        "masa_mediana_g": 529.3,
+        "masa_media_g": 1010.118333333333,
+        "porcentaje": 0.01531226074592584
+      },
+      {
+        "class": "H/L5",
+        "registros": 7,
+        "masas_positivas": 7,
+        "masa_mediana_g": 217.44,
+        "masa_media_g": 289.5757142857143,
+        "porcentaje": 0.01531226074592584
+      },
+      {
+        "class": "H3.3",
+        "registros": 7,
+        "masas_positivas": 7,
+        "masa_mediana_g": 33.8,
+        "masa_media_g": 414.2142857142857,
+        "porcentaje": 0.01531226074592584
+      },
+      {
+        "class": "Unknown",
+        "registros": 7,
+        "masas_positivas": 0,
+        "masa_mediana_g": "",
+        "masa_media_g": "",
+        "porcentaje": 0.01531226074592584
+      },
+      {
+        "class": "CO3.3",
+        "registros": 7,
+        "masas_positivas": 7,
+        "masa_mediana_g": 484.0,
+        "masa_media_g": 4314.801428571429,
+        "porcentaje": 0.01531226074592584
+      },
+      {
+        "class": "E",
+        "registros": 7,
+        "masas_positivas": 7,
+        "masa_mediana_g": 124.0,
+        "masa_media_g": 57210.88428571429,
+        "porcentaje": 0.01531226074592584
+      },
+      {
+        "class": "Iron, IIE-an",
+        "registros": 7,
+        "masas_positivas": 7,
+        "masa_mediana_g": 8940.0,
+        "masa_media_g": 53137.04571428571,
+        "porcentaje": 0.01531226074592584
+      },
+      {
+        "class": "LL-melt rock",
+        "registros": 7,
+        "masas_positivas": 7,
+        "masa_mediana_g": 189.0,
+        "masa_media_g": 537.2571428571429,
+        "porcentaje": 0.01531226074592584
+      },
+      {
+        "class": "LL(L)3",
+        "registros": 7,
+        "masas_positivas": 7,
+        "masa_mediana_g": 224.0,
+        "masa_media_g": 995.2714285714285,
+        "porcentaje": 0.01531226074592584
+      },
+      {
+        "class": "LL3.1",
+        "registros": 6,
+        "masas_positivas": 6,
+        "masa_mediana_g": 632.0,
+        "masa_media_g": 1405.865,
+        "porcentaje": 0.01312479492507929
+      },
+      {
+        "class": "Iron, IIG",
+        "registros": 6,
+        "masas_positivas": 6,
+        "masa_mediana_g": 24044.5,
+        "masa_media_g": 24303.16666666667,
+        "porcentaje": 0.01312479492507929
+      },
+      {
+        "class": "Iron, IVA-an",
+        "registros": 6,
+        "masas_positivas": 6,
+        "masa_mediana_g": 56650.0,
+        "masa_media_g": 73986.66666666667,
+        "porcentaje": 0.01312479492507929
+      },
+      {
+        "class": "Acapulcoite/Lodranite",
+        "registros": 6,
+        "masas_positivas": 6,
+        "masa_mediana_g": 29.8,
+        "masa_media_g": 31.79333333333333,
+        "porcentaje": 0.01312479492507929
+      },
+      {
+        "class": "Iron, IIF",
+        "registros": 6,
+        "masas_positivas": 6,
+        "masa_mediana_g": 9170.0,
+        "masa_media_g": 11156.0,
+        "porcentaje": 0.01312479492507929
+      },
+      {
+        "class": "CK5/6",
+        "registros": 6,
+        "masas_positivas": 6,
+        "masa_mediana_g": 98.05,
+        "masa_media_g": 145.7333333333333,
+        "porcentaje": 0.01312479492507929
+      },
+      {
+        "class": "H/L3",
+        "registros": 6,
+        "masas_positivas": 6,
+        "masa_mediana_g": 105.75,
+        "masa_media_g": 150.5333333333333,
+        "porcentaje": 0.01312479492507929
+      },
+      {
+        "class": "Lunar (gabbro)",
+        "registros": 6,
+        "masas_positivas": 6,
+        "masa_mediana_g": 162.0,
+        "masa_media_g": 413.5316666666667,
+        "porcentaje": 0.01312479492507929
+      },
+      {
+        "class": "Mesosiderite-an",
+        "registros": 6,
+        "masas_positivas": 6,
+        "masa_mediana_g": 15.4,
+        "masa_media_g": 2008.816666666667,
+        "porcentaje": 0.01312479492507929
+      },
+      {
+        "class": "E3-an",
+        "registros": 6,
+        "masas_positivas": 6,
+        "masa_mediana_g": 4.3,
+        "masa_media_g": 25.66666666666667,
+        "porcentaje": 0.01312479492507929
+      },
+      {
+        "class": "EH-imp melt",
+        "registros": 6,
+        "masas_positivas": 6,
+        "masa_mediana_g": 53.185,
+        "masa_media_g": 82.70333333333333,
+        "porcentaje": 0.01312479492507929
+      },
+      {
+        "class": "EH5",
+        "registros": 6,
+        "masas_positivas": 6,
+        "masa_mediana_g": 58.315,
+        "masa_media_g": 4654.038333333333,
+        "porcentaje": 0.01312479492507929
+      },
+      {
+        "class": "CO3.1",
+        "registros": 6,
+        "masas_positivas": 6,
+        "masa_mediana_g": 200.5,
+        "masa_media_g": 303.3166666666667,
+        "porcentaje": 0.01312479492507929
+      },
+      {
+        "class": "Mesosiderite-A1",
+        "registros": 6,
+        "masas_positivas": 6,
+        "masa_mediana_g": 42925.0,
+        "masa_media_g": 698206.3333333334,
+        "porcentaje": 0.01312479492507929
+      },
+      {
+        "class": "R3-5",
+        "registros": 6,
+        "masas_positivas": 6,
+        "masa_mediana_g": 621.0,
+        "masa_media_g": 604.2166666666667,
+        "porcentaje": 0.01312479492507929
+      },
+      {
+        "class": "H4/6",
+        "registros": 6,
+        "masas_positivas": 6,
+        "masa_mediana_g": 1253.15,
+        "masa_media_g": 1493.016666666667,
+        "porcentaje": 0.01312479492507929
+      },
+      {
+        "class": "EL5",
+        "registros": 6,
+        "masas_positivas": 6,
+        "masa_mediana_g": 166.95,
+        "masa_media_g": 593.9833333333333,
+        "porcentaje": 0.01312479492507929
+      },
+      {
+        "class": "H-metal",
+        "registros": 6,
+        "masas_positivas": 6,
+        "masa_mediana_g": 2.19,
+        "masa_media_g": 10.67,
+        "porcentaje": 0.01312479492507929
+      },
+      {
+        "class": "Aubrite-an",
+        "registros": 6,
+        "masas_positivas": 6,
+        "masa_mediana_g": 71.01,
+        "masa_media_g": 8390.77,
+        "porcentaje": 0.01312479492507929
+      },
+      {
+        "class": "L(LL)3",
+        "registros": 5,
+        "masas_positivas": 5,
+        "masa_mediana_g": 56.6,
+        "masa_media_g": 55.86,
+        "porcentaje": 0.01093732910423275
+      },
+      {
+        "class": "L-metal",
+        "registros": 5,
+        "masas_positivas": 5,
+        "masa_mediana_g": 1.3,
+        "masa_media_g": 1.0254,
+        "porcentaje": 0.01093732910423275
+      },
+      {
+        "class": "Mesosiderite-B2",
+        "registros": 5,
+        "masas_positivas": 5,
+        "masa_mediana_g": 115.7,
+        "masa_media_g": 11857.342,
+        "porcentaje": 0.01093732910423275
+      },
+      {
+        "class": "Pallasite, ungrouped",
+        "registros": 5,
+        "masas_positivas": 5,
+        "masa_mediana_g": 54.86,
+        "masa_media_g": 7310.786,
+        "porcentaje": 0.01093732910423275
+      },
+      {
+        "class": "LL4/5",
+        "registros": 5,
+        "masas_positivas": 5,
+        "masa_mediana_g": 216.0,
+        "masa_media_g": 873.78,
+        "porcentaje": 0.01093732910423275
+      },
+      {
+        "class": "H3.9/4",
+        "registros": 5,
+        "masas_positivas": 5,
+        "masa_mediana_g": 252.0,
+        "masa_media_g": 5587.546,
+        "porcentaje": 0.01093732910423275
+      },
+      {
+        "class": "LL~6",
+        "registros": 5,
+        "masas_positivas": 5,
+        "masa_mediana_g": 42.03,
+        "masa_media_g": 413.222,
+        "porcentaje": 0.01093732910423275
+      },
+      {
+        "class": "E-an",
+        "registros": 5,
+        "masas_positivas": 5,
+        "masa_mediana_g": 19.9,
+        "masa_media_g": 18.86,
+        "porcentaje": 0.01093732910423275
+      },
+      {
+        "class": "CO3.4",
+        "registros": 5,
+        "masas_positivas": 5,
+        "masa_mediana_g": 79.47,
+        "masa_media_g": 1415.594,
+        "porcentaje": 0.01093732910423275
+      },
+      {
+        "class": "CBa",
+        "registros": 5,
+        "masas_positivas": 5,
+        "masa_mediana_g": 2000.0,
+        "masa_media_g": 44043.2,
+        "porcentaje": 0.01093732910423275
+      },
+      {
+        "class": "L/LL5/6",
+        "registros": 5,
+        "masas_positivas": 5,
+        "masa_mediana_g": 236.0,
+        "masa_media_g": 350.8,
+        "porcentaje": 0.01093732910423275
+      },
+      {
+        "class": "E5",
+        "registros": 5,
+        "masas_positivas": 5,
+        "masa_mediana_g": 0.38,
+        "masa_media_g": 1.098,
+        "porcentaje": 0.01093732910423275
+      },
+      {
+        "class": "CBb",
+        "registros": 5,
+        "masas_positivas": 5,
+        "masa_mediana_g": 30.5,
+        "masa_media_g": 653.5600000000001,
+        "porcentaje": 0.01093732910423275
+      },
+      {
+        "class": "EH6",
+        "registros": 5,
+        "masas_positivas": 5,
+        "masa_mediana_g": 36.923,
+        "masa_media_g": 92.94659999999999,
+        "porcentaje": 0.01093732910423275
+      },
+      {
+        "class": "Iron, IAB-sHH",
+        "registros": 5,
+        "masas_positivas": 5,
+        "masa_mediana_g": 490.0,
+        "masa_media_g": 3862.2,
+        "porcentaje": 0.01093732910423275
+      },
+      {
+        "class": "R3.9",
+        "registros": 4,
+        "masas_positivas": 4,
+        "masa_mediana_g": 108.0,
+        "masa_media_g": 3055.7475,
+        "porcentaje": 0.008749863283386197
+      },
+      {
+        "class": "Ureilite-an",
+        "registros": 4,
+        "masas_positivas": 4,
+        "masa_mediana_g": 597.6999999999999,
+        "masa_media_g": 1287.125,
+        "porcentaje": 0.008749863283386197
+      },
+      {
+        "class": "Pallasite, PES",
+        "registros": 4,
+        "masas_positivas": 4,
+        "masa_mediana_g": 18175.0,
+        "masa_media_g": 42167.5,
+        "porcentaje": 0.008749863283386197
+      },
+      {
+        "class": "LL3.0",
+        "registros": 4,
+        "masas_positivas": 4,
+        "masa_mediana_g": 21.72,
+        "masa_media_g": 75.5575,
+        "porcentaje": 0.008749863283386197
+      },
+      {
+        "class": "L/LL3.4",
+        "registros": 4,
+        "masas_positivas": 4,
+        "masa_mediana_g": 2334.5,
+        "masa_media_g": 2994.5275,
+        "porcentaje": 0.008749863283386197
+      },
+      {
+        "class": "R3.8-6",
+        "registros": 4,
+        "masas_positivas": 4,
+        "masa_mediana_g": 142.6,
+        "masa_media_g": 266.55,
+        "porcentaje": 0.008749863283386197
+      },
+      {
+        "class": "Eucrite-Mg rich",
+        "registros": 4,
+        "masas_positivas": 4,
+        "masa_mediana_g": 132.3,
+        "masa_media_g": 207.925,
+        "porcentaje": 0.008749863283386197
+      },
+      {
+        "class": "L3-4",
+        "registros": 4,
+        "masas_positivas": 4,
+        "masa_mediana_g": 209.5,
+        "masa_media_g": 284.75,
+        "porcentaje": 0.008749863283386197
+      },
+      {
+        "class": "H-an",
+        "registros": 4,
+        "masas_positivas": 4,
+        "masa_mediana_g": 13.645,
+        "masa_media_g": 24.455,
+        "porcentaje": 0.008749863283386197
+      },
+      {
+        "class": "CO3.0",
+        "registros": 4,
+        "masas_positivas": 4,
+        "masa_mediana_g": 253.67,
+        "masa_media_g": 1150.16,
+        "porcentaje": 0.008749863283386197
+      },
+      {
+        "class": "Fusion crust",
+        "registros": 4,
+        "masas_positivas": 4,
+        "masa_mediana_g": 0.1,
+        "masa_media_g": 0.07825,
+        "porcentaje": 0.008749863283386197
+      },
+      {
+        "class": "H-melt breccia",
+        "registros": 4,
+        "masas_positivas": 4,
+        "masa_mediana_g": 45.5,
+        "masa_media_g": 47.0925,
+        "porcentaje": 0.008749863283386197
+      },
+      {
+        "class": "E4",
+        "registros": 4,
+        "masas_positivas": 4,
+        "masa_mediana_g": 32.925,
+        "masa_media_g": 42.6875,
+        "porcentaje": 0.008749863283386197
+      },
+      {
+        "class": "Iron, IAB?",
+        "registros": 4,
+        "masas_positivas": 4,
+        "masa_mediana_g": 1750.0,
+        "masa_media_g": 1582.75,
+        "porcentaje": 0.008749863283386197
+      },
+      {
+        "class": "Mesosiderite-B1",
+        "registros": 4,
+        "masas_positivas": 4,
+        "masa_mediana_g": 588.3,
+        "masa_media_g": 1324.375,
+        "porcentaje": 0.008749863283386197
+      },
+      {
+        "class": "H3.9-6",
+        "registros": 4,
+        "masas_positivas": 4,
+        "masa_mediana_g": 136.53,
+        "masa_media_g": 171.0475,
+        "porcentaje": 0.008749863283386197
+      },
+      {
+        "class": "Mesosiderite-B",
+        "registros": 4,
+        "masas_positivas": 4,
+        "masa_mediana_g": 428.5,
+        "masa_media_g": 2257.75,
+        "porcentaje": 0.008749863283386197
+      },
+      {
+        "class": "CV3-an",
+        "registros": 4,
+        "masas_positivas": 4,
+        "masa_mediana_g": 146.55,
+        "masa_media_g": 825.8,
+        "porcentaje": 0.008749863283386197
+      },
+      {
+        "class": "LL6/7",
+        "registros": 4,
+        "masas_positivas": 4,
+        "masa_mediana_g": 390.0,
+        "masa_media_g": 533.75,
+        "porcentaje": 0.008749863283386197
+      },
+      {
+        "class": "Chondrite-fusion crust",
+        "registros": 4,
+        "masas_positivas": 4,
+        "masa_mediana_g": 0.565,
+        "masa_media_g": 0.71,
+        "porcentaje": 0.008749863283386197
+      },
+      {
+        "class": "Iron, IIIAB?",
+        "registros": 4,
+        "masas_positivas": 4,
+        "masa_mediana_g": 9366.0,
+        "masa_media_g": 7795.5,
+        "porcentaje": 0.008749863283386197
+      },
+      {
+        "class": "CM",
+        "registros": 4,
+        "masas_positivas": 4,
+        "masa_mediana_g": 33.16,
+        "masa_media_g": 359.89,
+        "porcentaje": 0.008749863283386197
+      },
+      {
+        "class": "H5-melt breccia",
+        "registros": 4,
+        "masas_positivas": 4,
+        "masa_mediana_g": 397.0,
+        "masa_media_g": 509.75,
+        "porcentaje": 0.008749863283386197
+      },
+      {
+        "class": "R3.6",
+        "registros": 3,
+        "masas_positivas": 3,
+        "masa_mediana_g": 308.5,
+        "masa_media_g": 690.4666666666667,
+        "porcentaje": 0.006562397462539647
+      },
+      {
+        "class": "L5-melt breccia",
+        "registros": 3,
+        "masas_positivas": 3,
+        "masa_mediana_g": 126.0,
+        "masa_media_g": 2198.666666666667,
+        "porcentaje": 0.006562397462539647
+      },
+      {
+        "class": "Acapulcoite/lodranite",
+        "registros": 3,
+        "masas_positivas": 3,
+        "masa_mediana_g": 3.5,
+        "masa_media_g": 44.93333333333334,
+        "porcentaje": 0.006562397462539647
+      },
+      {
+        "class": "Enst achon-ung",
+        "registros": 3,
+        "masas_positivas": 3,
+        "masa_mediana_g": 685.0,
+        "masa_media_g": 3147.666666666667,
+        "porcentaje": 0.006562397462539647
+      },
+      {
+        "class": "Enst achon",
+        "registros": 3,
+        "masas_positivas": 3,
+        "masa_mediana_g": 132.8,
+        "masa_media_g": 219.6333333333333,
+        "porcentaje": 0.006562397462539647
+      },
+      {
+        "class": "Iron, IAB-an",
+        "registros": 3,
+        "masas_positivas": 3,
+        "masa_mediana_g": 1387.0,
+        "masa_media_g": 2154.333333333333,
+        "porcentaje": 0.006562397462539647
+      },
+      {
+        "class": "L/LL~6",
+        "registros": 3,
+        "masas_positivas": 3,
+        "masa_mediana_g": 131.2,
+        "masa_media_g": 700.9,
+        "porcentaje": 0.006562397462539647
+      },
+      {
+        "class": "LL~3",
+        "registros": 3,
+        "masas_positivas": 3,
+        "masa_mediana_g": 15.1,
+        "masa_media_g": 19.86666666666666,
+        "porcentaje": 0.006562397462539647
+      },
+      {
+        "class": "Mesosiderite-B4",
+        "registros": 3,
+        "masas_positivas": 3,
+        "masa_mediana_g": 100000.0,
+        "masa_media_g": 359333.3333333333,
+        "porcentaje": 0.006562397462539647
+      },
+      {
+        "class": "CK",
+        "registros": 3,
+        "masas_positivas": 3,
+        "masa_mediana_g": 68.0,
+        "masa_media_g": 120.7333333333333,
+        "porcentaje": 0.006562397462539647
+      },
+      {
+        "class": "CK4-an",
+        "registros": 3,
+        "masas_positivas": 3,
+        "masa_mediana_g": 3388.0,
+        "masa_media_g": 2932.666666666667,
+        "porcentaje": 0.006562397462539647
+      },
+      {
+        "class": "H6-melt breccia",
+        "registros": 3,
+        "masas_positivas": 3,
+        "masa_mediana_g": 176.0,
+        "masa_media_g": 332.4266666666667,
+        "porcentaje": 0.006562397462539647
+      },
+      {
+        "class": "CK3-an",
+        "registros": 3,
+        "masas_positivas": 3,
+        "masa_mediana_g": 353.0,
+        "masa_media_g": 540.6,
+        "porcentaje": 0.006562397462539647
+      },
+      {
+        "class": "H~4/5",
+        "registros": 3,
+        "masas_positivas": 3,
+        "masa_mediana_g": 221.3,
+        "masa_media_g": 256.4333333333333,
+        "porcentaje": 0.006562397462539647
+      },
+      {
+        "class": "C4-ung",
+        "registros": 3,
+        "masas_positivas": 3,
+        "masa_mediana_g": 569.0,
+        "masa_media_g": 1749.333333333333,
+        "porcentaje": 0.006562397462539647
+      },
+      {
+        "class": "H3.0",
+        "registros": 3,
+        "masas_positivas": 3,
+        "masa_mediana_g": 161.56,
+        "masa_media_g": 182.85,
+        "porcentaje": 0.006562397462539647
+      },
+      {
+        "class": "CO3.8",
+        "registros": 3,
+        "masas_positivas": 3,
+        "masa_mediana_g": 596.0,
+        "masa_media_g": 7901.666666666667,
+        "porcentaje": 0.006562397462539647
+      },
+      {
+        "class": "Mesosiderite-A2",
+        "registros": 3,
+        "masas_positivas": 3,
+        "masa_mediana_g": 7000.0,
+        "masa_media_g": 4949.0,
+        "porcentaje": 0.006562397462539647
+      },
+      {
+        "class": "Iron, IIIAB-an",
+        "registros": 3,
+        "masas_positivas": 3,
+        "masa_mediana_g": 63000.0,
+        "masa_media_g": 240233.3333333333,
+        "porcentaje": 0.006562397462539647
+      },
+      {
+        "class": "Eucrite-an",
+        "registros": 3,
+        "masas_positivas": 3,
+        "masa_mediana_g": 631.0,
+        "masa_media_g": 6463.0,
+        "porcentaje": 0.006562397462539647
+      },
+      {
+        "class": "H3.2-an",
+        "registros": 3,
+        "masas_positivas": 3,
+        "masa_mediana_g": 233.4,
+        "masa_media_g": 524.4333333333334,
+        "porcentaje": 0.006562397462539647
+      },
+      {
+        "class": "Mesosiderite-A3",
+        "registros": 3,
+        "masas_positivas": 3,
+        "masa_mediana_g": 16700.0,
+        "masa_media_g": 30666.66666666667,
+        "porcentaje": 0.006562397462539647
+      },
+      {
+        "class": "LL3.10",
+        "registros": 3,
+        "masas_positivas": 3,
+        "masa_mediana_g": 487.0,
+        "masa_media_g": 552.0666666666667,
+        "porcentaje": 0.006562397462539647
+      },
+      {
+        "class": "Mesosiderite-A4",
+        "registros": 3,
+        "masas_positivas": 3,
+        "masa_mediana_g": 16500.0,
+        "masa_media_g": 19166.66666666667,
+        "porcentaje": 0.006562397462539647
+      },
+      {
+        "class": "R",
+        "registros": 3,
+        "masas_positivas": 3,
+        "masa_mediana_g": 44.9,
+        "masa_media_g": 66.35333333333334,
+        "porcentaje": 0.006562397462539647
+      },
+      {
+        "class": "LL3.15",
+        "registros": 3,
+        "masas_positivas": 3,
+        "masa_mediana_g": 101.64,
+        "masa_media_g": 387.1033333333333,
+        "porcentaje": 0.006562397462539647
+      },
+      {
+        "class": "LL3.8-6",
+        "registros": 3,
+        "masas_positivas": 3,
+        "masa_mediana_g": 517.0,
+        "masa_media_g": 916.6666666666666,
+        "porcentaje": 0.006562397462539647
+      },
+      {
+        "class": "L/LL3-5",
+        "registros": 3,
+        "masas_positivas": 3,
+        "masa_mediana_g": 125.0,
+        "masa_media_g": 413.7666666666667,
+        "porcentaje": 0.006562397462539647
+      },
+      {
+        "class": "Diogenite-an",
+        "registros": 3,
+        "masas_positivas": 3,
+        "masa_mediana_g": 250.6,
+        "masa_media_g": 261.8666666666667,
+        "porcentaje": 0.006562397462539647
+      },
+      {
+        "class": "Mesosiderite-C2",
+        "registros": 2,
+        "masas_positivas": 2,
+        "masa_mediana_g": 25613.0,
+        "masa_media_g": 25613.0,
+        "porcentaje": 0.004374931641693098
+      },
+      {
+        "class": "L3.8-5",
+        "registros": 2,
+        "masas_positivas": 2,
+        "masa_mediana_g": 345.55,
+        "masa_media_g": 345.55,
+        "porcentaje": 0.004374931641693098
+      },
+      {
+        "class": "LL6-melt breccia",
+        "registros": 2,
+        "masas_positivas": 2,
+        "masa_mediana_g": 126.0,
+        "masa_media_g": 126.0,
+        "porcentaje": 0.004374931641693098
+      },
+      {
+        "class": "R3/4",
+        "registros": 2,
+        "masas_positivas": 2,
+        "masa_mediana_g": 80.65,
+        "masa_media_g": 80.65,
+        "porcentaje": 0.004374931641693098
+      },
+      {
+        "class": "C4",
+        "registros": 2,
+        "masas_positivas": 2,
+        "masa_mediana_g": 28.97,
+        "masa_media_g": 28.97,
+        "porcentaje": 0.004374931641693098
+      },
+      {
+        "class": "L3.9-6",
+        "registros": 2,
+        "masas_positivas": 2,
+        "masa_mediana_g": 186.0,
+        "masa_media_g": 186.0,
+        "porcentaje": 0.004374931641693098
+      },
+      {
+        "class": "LL3-5",
+        "registros": 2,
+        "masas_positivas": 2,
+        "masa_mediana_g": 113.565,
+        "masa_media_g": 113.565,
+        "porcentaje": 0.004374931641693098
+      },
+      {
+        "class": "Mesosiderite-A",
+        "registros": 2,
+        "masas_positivas": 2,
+        "masa_mediana_g": 6234.75,
+        "masa_media_g": 6234.75,
+        "porcentaje": 0.004374931641693098
+      },
+      {
+        "class": "Martian (chassignite)",
+        "registros": 2,
+        "masas_positivas": 2,
+        "masa_mediana_g": 2305.5,
+        "masa_media_g": 2305.5,
+        "porcentaje": 0.004374931641693098
+      },
+      {
+        "class": "C6",
+        "registros": 2,
+        "masas_positivas": 2,
+        "masa_mediana_g": 83.19999999999999,
+        "masa_media_g": 83.19999999999999,
+        "porcentaje": 0.004374931641693098
+      },
+      {
+        "class": "Martian (basaltic breccia)",
+        "registros": 2,
+        "masas_positivas": 2,
+        "masa_mediana_g": 200.0,
+        "masa_media_g": 200.0,
+        "porcentaje": 0.004374931641693098
+      },
+      {
+        "class": "LL-imp melt",
+        "registros": 2,
+        "masas_positivas": 2,
+        "masa_mediana_g": 92.64999999999999,
+        "masa_media_g": 92.64999999999999,
+        "porcentaje": 0.004374931641693098
+      },
+      {
+        "class": "Lunar (bas/anor)",
+        "registros": 2,
+        "masas_positivas": 2,
+        "masa_mediana_g": 5.585,
+        "masa_media_g": 5.585,
+        "porcentaje": 0.004374931641693098
+      },
+      {
+        "class": "Lunar (bas. breccia)",
+        "registros": 2,
+        "masas_positivas": 2,
+        "masa_mediana_g": 79.0,
+        "masa_media_g": 79.0,
+        "porcentaje": 0.004374931641693098
+      },
+      {
+        "class": "R3.7",
+        "registros": 2,
+        "masas_positivas": 2,
+        "masa_mediana_g": 236.0,
+        "masa_media_g": 236.0,
+        "porcentaje": 0.004374931641693098
+      },
+      {
+        "class": "CR1",
+        "registros": 2,
+        "masas_positivas": 2,
+        "masa_mediana_g": 57.55,
+        "masa_media_g": 57.55,
+        "porcentaje": 0.004374931641693098
+      },
+      {
+        "class": "H3.10",
+        "registros": 2,
+        "masas_positivas": 2,
+        "masa_mediana_g": 330.0,
+        "masa_media_g": 330.0,
+        "porcentaje": 0.004374931641693098
+      },
+      {
+        "class": "H3.8-an",
+        "registros": 2,
+        "masas_positivas": 2,
+        "masa_mediana_g": 2135.5,
+        "masa_media_g": 2135.5,
+        "porcentaje": 0.004374931641693098
+      },
+      {
+        "class": "H3.6-6",
+        "registros": 2,
+        "masas_positivas": 2,
+        "masa_mediana_g": 623.4,
+        "masa_media_g": 623.4,
+        "porcentaje": 0.004374931641693098
+      },
+      {
+        "class": "H(L)3",
+        "registros": 2,
+        "masas_positivas": 2,
+        "masa_mediana_g": 791.05,
+        "masa_media_g": 791.05,
+        "porcentaje": 0.004374931641693098
+      },
+      {
+        "class": "K3",
+        "registros": 2,
+        "masas_positivas": 2,
+        "masa_mediana_g": 180.5,
+        "masa_media_g": 180.5,
+        "porcentaje": 0.004374931641693098
+      },
+      {
+        "class": "Iron, IID-an",
+        "registros": 2,
+        "masas_positivas": 2,
+        "masa_mediana_g": 11790.0,
+        "masa_media_g": 11790.0,
+        "porcentaje": 0.004374931641693098
+      },
+      {
+        "class": "H(5?)",
+        "registros": 2,
+        "masas_positivas": 2,
+        "masa_mediana_g": 159.9,
+        "masa_media_g": 159.9,
+        "porcentaje": 0.004374931641693098
+      },
+      {
+        "class": "L(?)3",
+        "registros": 2,
+        "masas_positivas": 2,
+        "masa_mediana_g": 10.235,
+        "masa_media_g": 10.235,
+        "porcentaje": 0.004374931641693098
+      },
+      {
+        "class": "L/LL~5",
+        "registros": 2,
+        "masas_positivas": 2,
+        "masa_mediana_g": 315.35,
+        "masa_media_g": 315.35,
+        "porcentaje": 0.004374931641693098
+      },
+      {
+        "class": "L/LL3.2",
+        "registros": 2,
+        "masas_positivas": 2,
+        "masa_mediana_g": 1608.2,
+        "masa_media_g": 1608.2,
+        "porcentaje": 0.004374931641693098
+      },
+      {
+        "class": "Iron, IC-an",
+        "registros": 2,
+        "masas_positivas": 2,
+        "masa_mediana_g": 35000.0,
+        "masa_media_g": 35000.0,
+        "porcentaje": 0.004374931641693098
+      },
+      {
+        "class": "EL6/7",
+        "registros": 2,
+        "masas_positivas": 2,
+        "masa_mediana_g": 58150.0,
+        "masa_media_g": 58150.0,
+        "porcentaje": 0.004374931641693098
+      },
+      {
+        "class": "L3.0",
+        "registros": 2,
+        "masas_positivas": 2,
+        "masa_mediana_g": 96.50500000000001,
+        "masa_media_g": 96.50500000000001,
+        "porcentaje": 0.004374931641693098
+      },
+      {
+        "class": "L(LL)3.05",
+        "registros": 2,
+        "masas_positivas": 2,
+        "masa_mediana_g": 491.55,
+        "masa_media_g": 491.55,
+        "porcentaje": 0.004374931641693098
+      },
+      {
+        "class": "H3.8-6",
+        "registros": 2,
+        "masas_positivas": 2,
+        "masa_mediana_g": 890.345,
+        "masa_media_g": 890.345,
+        "porcentaje": 0.004374931641693098
+      },
+      {
+        "class": "H3.7-5",
+        "registros": 2,
+        "masas_positivas": 2,
+        "masa_mediana_g": 2048.3705,
+        "masa_media_g": 2048.3705,
+        "porcentaje": 0.004374931641693098
+      },
+      {
+        "class": "EL-melt rock",
+        "registros": 2,
+        "masas_positivas": 2,
+        "masa_mediana_g": 8.3,
+        "masa_media_g": 8.3,
+        "porcentaje": 0.004374931641693098
+      },
+      {
+        "class": "Iron?",
+        "registros": 2,
+        "masas_positivas": 1,
+        "masa_mediana_g": 2250.0,
+        "masa_media_g": 2250.0,
+        "porcentaje": 0.004374931641693098
+      },
+      {
+        "class": "CM-an",
+        "registros": 2,
+        "masas_positivas": 2,
+        "masa_mediana_g": 66.0,
+        "masa_media_g": 66.0,
+        "porcentaje": 0.004374931641693098
+      },
+      {
+        "class": "H3.1",
+        "registros": 2,
+        "masas_positivas": 2,
+        "masa_mediana_g": 187.6,
+        "masa_media_g": 187.6,
+        "porcentaje": 0.004374931641693098
+      },
+      {
+        "class": "H3.8/4",
+        "registros": 2,
+        "masas_positivas": 2,
+        "masa_mediana_g": 351.0,
+        "masa_media_g": 351.0,
+        "porcentaje": 0.004374931641693098
+      },
+      {
+        "class": "L3.05",
+        "registros": 2,
+        "masas_positivas": 2,
+        "masa_mediana_g": 231.15,
+        "masa_media_g": 231.15,
+        "porcentaje": 0.004374931641693098
+      },
+      {
+        "class": "H?",
+        "registros": 2,
+        "masas_positivas": 2,
+        "masa_mediana_g": 430.1,
+        "masa_media_g": 430.1,
+        "porcentaje": 0.004374931641693098
+      },
+      {
+        "class": "H3.05",
+        "registros": 2,
+        "masas_positivas": 2,
+        "masa_mediana_g": 78.2,
+        "masa_media_g": 78.2,
+        "porcentaje": 0.004374931641693098
+      },
+      {
+        "class": "EH",
+        "registros": 2,
+        "masas_positivas": 1,
+        "masa_mediana_g": 0.59,
+        "masa_media_g": 0.59,
+        "porcentaje": 0.004374931641693098
+      },
+      {
+        "class": "H5-an",
+        "registros": 2,
+        "masas_positivas": 2,
+        "masa_mediana_g": 25.95,
+        "masa_media_g": 25.95,
+        "porcentaje": 0.004374931641693098
+      },
+      {
+        "class": "H3.9-5",
+        "registros": 2,
+        "masas_positivas": 2,
+        "masa_mediana_g": 161.0,
+        "masa_media_g": 161.0,
+        "porcentaje": 0.004374931641693098
+      },
+      {
+        "class": "H3.2",
+        "registros": 2,
+        "masas_positivas": 2,
+        "masa_mediana_g": 88.385,
+        "masa_media_g": 88.385,
+        "porcentaje": 0.004374931641693098
+      },
+      {
+        "class": "H6/7",
+        "registros": 2,
+        "masas_positivas": 2,
+        "masa_mediana_g": 68.5,
+        "masa_media_g": 68.5,
+        "porcentaje": 0.004374931641693098
+      },
+      {
+        "class": "H3.4-5",
+        "registros": 1,
+        "masas_positivas": 1,
+        "masa_mediana_g": 230.3,
+        "masa_media_g": 230.3,
+        "porcentaje": 0.002187465820846549
+      },
+      {
+        "class": "H3.2-6",
+        "registros": 1,
+        "masas_positivas": 1,
+        "masa_mediana_g": 83.9,
+        "masa_media_g": 83.9,
+        "porcentaje": 0.002187465820846549
+      },
+      {
+        "class": "H3.2-3.7",
+        "registros": 1,
+        "masas_positivas": 1,
+        "masa_mediana_g": 17.7,
+        "masa_media_g": 17.7,
+        "porcentaje": 0.002187465820846549
+      },
+      {
+        "class": "H3.4/3.5",
+        "registros": 1,
+        "masas_positivas": 1,
+        "masa_mediana_g": 499.5,
+        "masa_media_g": 499.5,
+        "porcentaje": 0.002187465820846549
+      },
+      {
+        "class": "H3.5-4",
+        "registros": 1,
+        "masas_positivas": 1,
+        "masa_mediana_g": 167.3,
+        "masa_media_g": 167.3,
+        "porcentaje": 0.002187465820846549
+      },
+      {
+        "class": "L3.3-3.5",
+        "registros": 1,
+        "masas_positivas": 1,
+        "masa_mediana_g": 4.9,
+        "masa_media_g": 4.9,
+        "porcentaje": 0.002187465820846549
+      },
+      {
+        "class": "Martian (OPX)",
+        "registros": 1,
+        "masas_positivas": 1,
+        "masa_mediana_g": 1930.9,
+        "masa_media_g": 1930.9,
+        "porcentaje": 0.002187465820846549
+      },
+      {
+        "class": "Martian",
+        "registros": 1,
+        "masas_positivas": 1,
+        "masa_mediana_g": 9.3,
+        "masa_media_g": 9.3,
+        "porcentaje": 0.002187465820846549
+      },
+      {
+        "class": "H3.7-6",
+        "registros": 1,
+        "masas_positivas": 1,
+        "masa_mediana_g": 97.8,
+        "masa_media_g": 97.8,
+        "porcentaje": 0.002187465820846549
+      },
+      {
+        "class": "H3.7/3.8",
+        "registros": 1,
+        "masas_positivas": 1,
+        "masa_mediana_g": 208.6,
+        "masa_media_g": 208.6,
+        "porcentaje": 0.002187465820846549
+      },
+      {
+        "class": "L~4-6",
+        "registros": 1,
+        "masas_positivas": 1,
+        "masa_mediana_g": 45.0,
+        "masa_media_g": 45.0,
+        "porcentaje": 0.002187465820846549
+      },
+      {
+        "class": "H3.15",
+        "registros": 1,
+        "masas_positivas": 1,
+        "masa_mediana_g": 730.0,
+        "masa_media_g": 730.0,
+        "porcentaje": 0.002187465820846549
+      },
+      {
+        "class": "L~3",
+        "registros": 1,
+        "masas_positivas": 1,
+        "masa_mediana_g": 362.7,
+        "masa_media_g": 362.7,
+        "porcentaje": 0.002187465820846549
+      },
+      {
+        "class": "Lunar (norite)",
+        "registros": 1,
+        "masas_positivas": 1,
+        "masa_mediana_g": 633.0,
+        "masa_media_g": 633.0,
+        "porcentaje": 0.002187465820846549
+      },
+      {
+        "class": "H3.8-5",
+        "registros": 1,
+        "masas_positivas": 1,
+        "masa_mediana_g": 125.0,
+        "masa_media_g": 125.0,
+        "porcentaje": 0.002187465820846549
+      },
+      {
+        "class": "Lunar (bas/gab brec)",
+        "registros": 1,
+        "masas_positivas": 1,
+        "masa_mediana_g": 191.2,
+        "masa_media_g": 191.2,
+        "porcentaje": 0.002187465820846549
+      },
+      {
+        "class": "H3.8/3.9",
+        "registros": 1,
+        "masas_positivas": 1,
+        "masa_mediana_g": 50.13,
+        "masa_media_g": 50.13,
+        "porcentaje": 0.002187465820846549
+      },
+      {
+        "class": "C1-ung",
+        "registros": 1,
+        "masas_positivas": 0,
+        "masa_mediana_g": "",
+        "masa_media_g": "",
+        "porcentaje": 0.002187465820846549
+      },
+      {
+        "class": "Lodranite-an",
+        "registros": 1,
+        "masas_positivas": 1,
+        "masa_mediana_g": 13.8,
+        "masa_media_g": 13.8,
+        "porcentaje": 0.002187465820846549
+      },
+      {
+        "class": "H4(?)",
+        "registros": 1,
+        "masas_positivas": 1,
+        "masa_mediana_g": 0.4,
+        "masa_media_g": 0.4,
+        "porcentaje": 0.002187465820846549
+      },
+      {
+        "class": "H4-melt breccia",
+        "registros": 1,
+        "masas_positivas": 1,
+        "masa_mediana_g": 468.0,
+        "masa_media_g": 468.0,
+        "porcentaje": 0.002187465820846549
+      },
+      {
+        "class": "H3.8-4",
+        "registros": 1,
+        "masas_positivas": 1,
+        "masa_mediana_g": 50000.0,
+        "masa_media_g": 50000.0,
+        "porcentaje": 0.002187465820846549
+      },
+      {
+        "class": "CM2-an",
+        "registros": 1,
+        "masas_positivas": 1,
+        "masa_mediana_g": 12.7,
+        "masa_media_g": 12.7,
+        "porcentaje": 0.002187465820846549
+      },
+      {
+        "class": "Mesosiderite-A3/4",
+        "registros": 1,
+        "masas_positivas": 1,
+        "masa_mediana_g": 320000.0,
+        "masa_media_g": 320000.0,
+        "porcentaje": 0.002187465820846549
+      },
+      {
+        "class": "EH3/4-an",
+        "registros": 1,
+        "masas_positivas": 1,
+        "masa_mediana_g": 28.0,
+        "masa_media_g": 28.0,
+        "porcentaje": 0.002187465820846549
+      },
+      {
+        "class": "EL4/5",
+        "registros": 1,
+        "masas_positivas": 1,
+        "masa_mediana_g": 608.9,
+        "masa_media_g": 608.9,
+        "porcentaje": 0.002187465820846549
+      },
+      {
+        "class": "R3.8-5",
+        "registros": 1,
+        "masas_positivas": 1,
+        "masa_mediana_g": 174.0,
+        "masa_media_g": 174.0,
+        "porcentaje": 0.002187465820846549
+      },
+      {
+        "class": "EL3/4",
+        "registros": 1,
+        "masas_positivas": 1,
+        "masa_mediana_g": 34.6,
+        "masa_media_g": 34.6,
+        "porcentaje": 0.002187465820846549
+      },
+      {
+        "class": "EH7-an",
+        "registros": 1,
+        "masas_positivas": 1,
+        "masa_mediana_g": 4720.0,
+        "masa_media_g": 4720.0,
+        "porcentaje": 0.002187465820846549
+      },
+      {
+        "class": "EH7",
+        "registros": 1,
+        "masas_positivas": 1,
+        "masa_mediana_g": 2427.9,
+        "masa_media_g": 2427.9,
+        "porcentaje": 0.002187465820846549
+      },
+      {
+        "class": "R4/5",
+        "registros": 1,
+        "masas_positivas": 1,
+        "masa_mediana_g": 184.0,
+        "masa_media_g": 184.0,
+        "porcentaje": 0.002187465820846549
+      },
+      {
+        "class": "EH6-an",
+        "registros": 1,
+        "masas_positivas": 1,
+        "masa_mediana_g": 75.61,
+        "masa_media_g": 75.61,
+        "porcentaje": 0.002187465820846549
+      },
+      {
+        "class": "Relict H",
+        "registros": 1,
+        "masas_positivas": 0,
+        "masa_mediana_g": "",
+        "masa_media_g": "",
+        "porcentaje": 0.002187465820846549
+      },
+      {
+        "class": "R3.5-6",
+        "registros": 1,
+        "masas_positivas": 1,
+        "masa_mediana_g": 205.0,
+        "masa_media_g": 205.0,
+        "porcentaje": 0.002187465820846549
+      },
+      {
+        "class": "Relict iron",
+        "registros": 1,
+        "masas_positivas": 0,
+        "masa_mediana_g": "",
+        "masa_media_g": "",
+        "porcentaje": 0.002187465820846549
+      },
+      {
+        "class": "E5-an",
+        "registros": 1,
+        "masas_positivas": 1,
+        "masa_mediana_g": 9.77,
+        "masa_media_g": 9.77,
+        "porcentaje": 0.002187465820846549
+      },
+      {
+        "class": "Stone-ung",
+        "registros": 1,
+        "masas_positivas": 1,
+        "masa_mediana_g": 0.63,
+        "masa_media_g": 0.63,
+        "porcentaje": 0.002187465820846549
+      },
+      {
+        "class": "CO3.7",
+        "registros": 1,
+        "masas_positivas": 1,
+        "masa_mediana_g": 1600.0,
+        "masa_media_g": 1600.0,
+        "porcentaje": 0.002187465820846549
+      },
+      {
+        "class": "CV2",
+        "registros": 1,
+        "masas_positivas": 1,
+        "masa_mediana_g": 30.6,
+        "masa_media_g": 30.6,
+        "porcentaje": 0.002187465820846549
+      },
+      {
+        "class": "CR7",
+        "registros": 1,
+        "masas_positivas": 1,
+        "masa_mediana_g": 868.0,
+        "masa_media_g": 868.0,
+        "porcentaje": 0.002187465820846549
+      },
+      {
+        "class": "CR2-an",
+        "registros": 1,
+        "masas_positivas": 1,
+        "masa_mediana_g": 160.0,
+        "masa_media_g": 160.0,
+        "porcentaje": 0.002187465820846549
+      },
+      {
+        "class": "EL7",
+        "registros": 1,
+        "masas_positivas": 1,
+        "masa_mediana_g": 421.0,
+        "masa_media_g": 421.0,
+        "porcentaje": 0.002187465820846549
+      },
+      {
+        "class": "R3.5-4",
+        "registros": 1,
+        "masas_positivas": 1,
+        "masa_mediana_g": 248.0,
+        "masa_media_g": 248.0,
+        "porcentaje": 0.002187465820846549
+      },
+      {
+        "class": "H3.0-3.4",
+        "registros": 1,
+        "masas_positivas": 1,
+        "masa_mediana_g": 738.0,
+        "masa_media_g": 738.0,
+        "porcentaje": 0.002187465820846549
+      },
+      {
+        "class": "H/L3.9",
+        "registros": 1,
+        "masas_positivas": 1,
+        "masa_mediana_g": 7250.0,
+        "masa_media_g": 7250.0,
+        "porcentaje": 0.002187465820846549
+      },
+      {
+        "class": "H3-an",
+        "registros": 1,
+        "masas_positivas": 1,
+        "masa_mediana_g": 61.4,
+        "masa_media_g": 61.4,
+        "porcentaje": 0.002187465820846549
+      },
+      {
+        "class": "LL~4",
+        "registros": 1,
+        "masas_positivas": 1,
+        "masa_mediana_g": 28.7,
+        "masa_media_g": 28.7,
+        "porcentaje": 0.002187465820846549
+      },
+      {
+        "class": "H/L~4",
+        "registros": 1,
+        "masas_positivas": 1,
+        "masa_mediana_g": 411.0,
+        "masa_media_g": 411.0,
+        "porcentaje": 0.002187465820846549
+      },
+      {
+        "class": "H/L6-melt rock",
+        "registros": 1,
+        "masas_positivas": 1,
+        "masa_mediana_g": 436.4,
+        "masa_media_g": 436.4,
+        "porcentaje": 0.002187465820846549
+      },
+      {
+        "class": "Mesosiderite?",
+        "registros": 1,
+        "masas_positivas": 1,
+        "masa_mediana_g": 414.0,
+        "masa_media_g": 414.0,
+        "porcentaje": 0.002187465820846549
+      },
+      {
+        "class": "H/L4/5",
+        "registros": 1,
+        "masas_positivas": 1,
+        "masa_mediana_g": 96.8,
+        "masa_media_g": 96.8,
+        "porcentaje": 0.002187465820846549
+      },
+      {
+        "class": "H/L4-5",
+        "registros": 1,
+        "masas_positivas": 1,
+        "masa_mediana_g": 1575.3,
+        "masa_media_g": 1575.3,
+        "porcentaje": 0.002187465820846549
+      },
+      {
+        "class": "H/L3.7",
+        "registros": 1,
+        "masas_positivas": 1,
+        "masa_mediana_g": 47.83,
+        "masa_media_g": 47.83,
+        "porcentaje": 0.002187465820846549
+      },
+      {
+        "class": "R3.4",
+        "registros": 1,
+        "masas_positivas": 1,
+        "masa_mediana_g": 10.5,
+        "masa_media_g": 10.5,
+        "porcentaje": 0.002187465820846549
+      },
+      {
+        "class": "H/L3.6",
+        "registros": 1,
+        "masas_positivas": 1,
+        "masa_mediana_g": 28000.0,
+        "masa_media_g": 28000.0,
+        "porcentaje": 0.002187465820846549
+      },
+      {
+        "class": "H/L3.5",
+        "registros": 1,
+        "masas_positivas": 1,
+        "masa_mediana_g": 1001.0,
+        "masa_media_g": 1001.0,
+        "porcentaje": 0.002187465820846549
+      },
+      {
+        "class": "H/L3-4",
+        "registros": 1,
+        "masas_positivas": 1,
+        "masa_mediana_g": 2000.0,
+        "masa_media_g": 2000.0,
+        "porcentaje": 0.002187465820846549
+      },
+      {
+        "class": "Pallasite?",
+        "registros": 1,
+        "masas_positivas": 1,
+        "masa_mediana_g": 14180.0,
+        "masa_media_g": 14180.0,
+        "porcentaje": 0.002187465820846549
+      },
+      {
+        "class": "H(L)3-an",
+        "registros": 1,
+        "masas_positivas": 1,
+        "masa_mediana_g": 271.0,
+        "masa_media_g": 271.0,
+        "porcentaje": 0.002187465820846549
+      },
+      {
+        "class": "R3-4",
+        "registros": 1,
+        "masas_positivas": 1,
+        "masa_mediana_g": 171.0,
+        "masa_media_g": 171.0,
+        "porcentaje": 0.002187465820846549
+      },
+      {
+        "class": "H(?)4",
+        "registros": 1,
+        "masas_positivas": 1,
+        "masa_mediana_g": 16.16,
+        "masa_media_g": 16.16,
+        "porcentaje": 0.002187465820846549
+      },
+      {
+        "class": "LL~4/5",
+        "registros": 1,
+        "masas_positivas": 1,
+        "masa_mediana_g": 23.8,
+        "masa_media_g": 23.8,
+        "porcentaje": 0.002187465820846549
+      },
+      {
+        "class": "LL6-an",
+        "registros": 1,
+        "masas_positivas": 1,
+        "masa_mediana_g": 2730.0,
+        "masa_media_g": 2730.0,
+        "porcentaje": 0.002187465820846549
+      },
+      {
+        "class": "H5-7",
+        "registros": 1,
+        "masas_positivas": 1,
+        "masa_mediana_g": 3891.0,
+        "masa_media_g": 3891.0,
+        "porcentaje": 0.002187465820846549
+      },
+      {
+        "class": "L4-melt rock",
+        "registros": 1,
+        "masas_positivas": 1,
+        "masa_mediana_g": 758.1,
+        "masa_media_g": 758.1,
+        "porcentaje": 0.002187465820846549
+      },
+      {
+        "class": "L3-melt breccia",
+        "registros": 1,
+        "masas_positivas": 1,
+        "masa_mediana_g": 1604.0,
+        "masa_media_g": 1604.0,
+        "porcentaje": 0.002187465820846549
+      },
+      {
+        "class": "L3.9/4",
+        "registros": 1,
+        "masas_positivas": 1,
+        "masa_mediana_g": 402.0,
+        "masa_media_g": 402.0,
+        "porcentaje": 0.002187465820846549
+      },
+      {
+        "class": "L3-7",
+        "registros": 1,
+        "masas_positivas": 1,
+        "masa_mediana_g": 122.25,
+        "masa_media_g": 122.25,
+        "porcentaje": 0.002187465820846549
+      },
+      {
+        "class": "L/LL~4",
+        "registros": 1,
+        "masas_positivas": 1,
+        "masa_mediana_g": 23.6,
+        "masa_media_g": 23.6,
+        "porcentaje": 0.002187465820846549
+      },
+      {
+        "class": "L/LL6-an",
+        "registros": 1,
+        "masas_positivas": 1,
+        "masa_mediana_g": 5900.0,
+        "masa_media_g": 5900.0,
+        "porcentaje": 0.002187465820846549
+      },
+      {
+        "class": "L4-an",
+        "registros": 1,
+        "masas_positivas": 1,
+        "masa_mediana_g": 57.2,
+        "masa_media_g": 57.2,
+        "porcentaje": 0.002187465820846549
+      },
+      {
+        "class": "L4-melt breccia",
+        "registros": 1,
+        "masas_positivas": 1,
+        "masa_mediana_g": 5200.0,
+        "masa_media_g": 5200.0,
+        "porcentaje": 0.002187465820846549
+      },
+      {
+        "class": "C5/6-ung",
+        "registros": 1,
+        "masas_positivas": 1,
+        "masa_mediana_g": 169.2,
+        "masa_media_g": 169.2,
+        "porcentaje": 0.002187465820846549
+      },
+      {
+        "class": "L/LL3.10",
+        "registros": 1,
+        "masas_positivas": 1,
+        "masa_mediana_g": 287.0,
+        "masa_media_g": 287.0,
+        "porcentaje": 0.002187465820846549
+      },
+      {
+        "class": "C4/5",
+        "registros": 1,
+        "masas_positivas": 1,
+        "masa_mediana_g": 226.0,
+        "masa_media_g": 226.0,
+        "porcentaje": 0.002187465820846549
+      },
+      {
+        "class": "L/LL5-6",
+        "registros": 1,
+        "masas_positivas": 1,
+        "masa_mediana_g": 3287.0,
+        "masa_media_g": 3287.0,
+        "porcentaje": 0.002187465820846549
+      },
+      {
+        "class": "L5-7",
+        "registros": 1,
+        "masas_positivas": 1,
+        "masa_mediana_g": 929.4,
+        "masa_media_g": 929.4,
+        "porcentaje": 0.002187465820846549
+      },
+      {
+        "class": "L/LL4/5",
+        "registros": 1,
+        "masas_positivas": 1,
+        "masa_mediana_g": 789.2,
+        "masa_media_g": 789.2,
+        "porcentaje": 0.002187465820846549
+      },
+      {
+        "class": "L/LL4-6",
+        "registros": 1,
+        "masas_positivas": 1,
+        "masa_mediana_g": 3650.0,
+        "masa_media_g": 3650.0,
+        "porcentaje": 0.002187465820846549
+      },
+      {
+        "class": "L/LL3.6/3.7",
+        "registros": 1,
+        "masas_positivas": 1,
+        "masa_mediana_g": 2618.0,
+        "masa_media_g": 2618.0,
+        "porcentaje": 0.002187465820846549
+      },
+      {
+        "class": "CR-an",
+        "registros": 1,
+        "masas_positivas": 1,
+        "masa_mediana_g": 114000.0,
+        "masa_media_g": 114000.0,
+        "porcentaje": 0.002187465820846549
+      },
+      {
+        "class": "L3.9-5",
+        "registros": 1,
+        "masas_positivas": 1,
+        "masa_mediana_g": 31.94,
+        "masa_media_g": 31.94,
+        "porcentaje": 0.002187465820846549
+      },
+      {
+        "class": "L3.8-an",
+        "registros": 1,
+        "masas_positivas": 1,
+        "masa_mediana_g": 14040.0,
+        "masa_media_g": 14040.0,
+        "porcentaje": 0.002187465820846549
+      },
+      {
+        "class": "L3.0-3.7",
+        "registros": 1,
+        "masas_positivas": 1,
+        "masa_mediana_g": 50.1,
+        "masa_media_g": 50.1,
+        "porcentaje": 0.002187465820846549
+      },
+      {
+        "class": "L3.0-3.9",
+        "registros": 1,
+        "masas_positivas": 1,
+        "masa_mediana_g": 424.1,
+        "masa_media_g": 424.1,
+        "porcentaje": 0.002187465820846549
+      },
+      {
+        "class": "L3.3-3.7",
+        "registros": 1,
+        "masas_positivas": 1,
+        "masa_mediana_g": 15.4,
+        "masa_media_g": 15.4,
+        "porcentaje": 0.002187465820846549
+      },
+      {
+        "class": "L3.2-3.6",
+        "registros": 1,
+        "masas_positivas": 1,
+        "masa_mediana_g": 65.3,
+        "masa_media_g": 65.3,
+        "porcentaje": 0.002187465820846549
+      },
+      {
+        "class": "L3.4-3.7",
+        "registros": 1,
+        "masas_positivas": 1,
+        "masa_mediana_g": 272.0,
+        "masa_media_g": 272.0,
+        "porcentaje": 0.002187465820846549
+      },
+      {
+        "class": "L3.2-3.5",
+        "registros": 1,
+        "masas_positivas": 1,
+        "masa_mediana_g": 351.7,
+        "masa_media_g": 351.7,
+        "porcentaje": 0.002187465820846549
+      },
+      {
+        "class": "L3.5-3.7",
+        "registros": 1,
+        "masas_positivas": 1,
+        "masa_mediana_g": 149.5,
+        "masa_media_g": 149.5,
+        "porcentaje": 0.002187465820846549
+      },
+      {
+        "class": "L3.5-3.8",
+        "registros": 1,
+        "masas_positivas": 1,
+        "masa_mediana_g": 73.0,
+        "masa_media_g": 73.0,
+        "porcentaje": 0.002187465820846549
+      },
+      {
+        "class": "L3.5-3.9",
+        "registros": 1,
+        "masas_positivas": 1,
+        "masa_mediana_g": 325.8,
+        "masa_media_g": 325.8,
+        "porcentaje": 0.002187465820846549
+      },
+      {
+        "class": "L3.5-5",
+        "registros": 1,
+        "masas_positivas": 1,
+        "masa_mediana_g": 5590.0,
+        "masa_media_g": 5590.0,
+        "porcentaje": 0.002187465820846549
+      },
+      {
+        "class": "L3.10",
+        "registros": 1,
+        "masas_positivas": 1,
+        "masa_mediana_g": 404.0,
+        "masa_media_g": 404.0,
+        "porcentaje": 0.002187465820846549
+      },
+      {
+        "class": "L3.6-4",
+        "registros": 1,
+        "masas_positivas": 1,
+        "masa_mediana_g": 153.2,
+        "masa_media_g": 153.2,
+        "porcentaje": 0.002187465820846549
+      },
+      {
+        "class": "L3.7-3.9",
+        "registros": 1,
+        "masas_positivas": 1,
+        "masa_mediana_g": 1470.0,
+        "masa_media_g": 1470.0,
+        "porcentaje": 0.002187465820846549
+      },
+      {
+        "class": "L3.7-4",
+        "registros": 1,
+        "masas_positivas": 1,
+        "masa_mediana_g": 31.4,
+        "masa_media_g": 31.4,
+        "porcentaje": 0.002187465820846549
+      },
+      {
+        "class": "L3.7-6",
+        "registros": 1,
+        "masas_positivas": 1,
+        "masa_mediana_g": 6100.0,
+        "masa_media_g": 6100.0,
+        "porcentaje": 0.002187465820846549
+      },
+      {
+        "class": "L3.7/3.8",
+        "registros": 1,
+        "masas_positivas": 1,
+        "masa_mediana_g": 350.0,
+        "masa_media_g": 350.0,
+        "porcentaje": 0.002187465820846549
+      },
+      {
+        "class": "L3.00",
+        "registros": 1,
+        "masas_positivas": 1,
+        "masa_mediana_g": 81.0,
+        "masa_media_g": 81.0,
+        "porcentaje": 0.002187465820846549
+      },
+      {
+        "class": "L6-melt rock",
+        "registros": 1,
+        "masas_positivas": 1,
+        "masa_mediana_g": 22000.0,
+        "masa_media_g": 22000.0,
+        "porcentaje": 0.002187465820846549
+      },
+      {
+        "class": "C3/4-ung",
+        "registros": 1,
+        "masas_positivas": 1,
+        "masa_mediana_g": 12.0,
+        "masa_media_g": 12.0,
+        "porcentaje": 0.002187465820846549
+      },
+      {
+        "class": "LL<3.5",
+        "registros": 1,
+        "masas_positivas": 1,
+        "masa_mediana_g": 200.0,
+        "masa_media_g": 200.0,
+        "porcentaje": 0.002187465820846549
+      },
+      {
+        "class": "LL4/6",
+        "registros": 1,
+        "masas_positivas": 1,
+        "masa_mediana_g": 35.0,
+        "masa_media_g": 35.0,
+        "porcentaje": 0.002187465820846549
+      },
+      {
+        "class": "LL3.8-4",
+        "registros": 1,
+        "masas_positivas": 1,
+        "masa_mediana_g": 3500.0,
+        "masa_media_g": 3500.0,
+        "porcentaje": 0.002187465820846549
+      },
+      {
+        "class": "Iron, IIAB-an",
+        "registros": 1,
+        "masas_positivas": 1,
+        "masa_mediana_g": 59.0,
+        "masa_media_g": 59.0,
+        "porcentaje": 0.002187465820846549
+      },
+      {
+        "class": "LL3.9/4",
+        "registros": 1,
+        "masas_positivas": 1,
+        "masa_mediana_g": 18.6,
+        "masa_media_g": 18.6,
+        "porcentaje": 0.002187465820846549
+      },
+      {
+        "class": "LL3/4",
+        "registros": 1,
+        "masas_positivas": 1,
+        "masa_mediana_g": 1452.0,
+        "masa_media_g": 1452.0,
+        "porcentaje": 0.002187465820846549
+      },
+      {
+        "class": "Iron, IAB-sHL-an",
+        "registros": 1,
+        "masas_positivas": 1,
+        "masa_mediana_g": 762.0,
+        "masa_media_g": 762.0,
+        "porcentaje": 0.002187465820846549
+      },
+      {
+        "class": "Impact melt breccia",
+        "registros": 1,
+        "masas_positivas": 1,
+        "masa_mediana_g": 172.0,
+        "masa_media_g": 172.0,
+        "porcentaje": 0.002187465820846549
+      },
+      {
+        "class": "Howardite-an",
+        "registros": 1,
+        "masas_positivas": 1,
+        "masa_mediana_g": 494.0,
+        "masa_media_g": 494.0,
+        "porcentaje": 0.002187465820846549
+      },
+      {
+        "class": "C2",
+        "registros": 1,
+        "masas_positivas": 1,
+        "masa_mediana_g": 0.8,
+        "masa_media_g": 0.8,
+        "porcentaje": 0.002187465820846549
+      },
+      {
+        "class": "L/LL3-6",
+        "registros": 1,
+        "masas_positivas": 1,
+        "masa_mediana_g": 68.0,
+        "masa_media_g": 68.0,
+        "porcentaje": 0.002187465820846549
+      },
+      {
+        "class": "CK3.8",
+        "registros": 1,
+        "masas_positivas": 1,
+        "masa_mediana_g": 195.0,
+        "masa_media_g": 195.0,
+        "porcentaje": 0.002187465820846549
+      },
+      {
+        "class": "LL5-7",
+        "registros": 1,
+        "masas_positivas": 1,
+        "masa_mediana_g": 87.4,
+        "masa_media_g": 87.4,
+        "porcentaje": 0.002187465820846549
+      },
+      {
+        "class": "C1/2-ung",
+        "registros": 1,
+        "masas_positivas": 1,
+        "masa_mediana_g": 41.73,
+        "masa_media_g": 41.73,
+        "porcentaje": 0.002187465820846549
+      },
+      {
+        "class": "LL6(?)",
+        "registros": 1,
+        "masas_positivas": 1,
+        "masa_mediana_g": 293.6,
+        "masa_media_g": 293.6,
+        "porcentaje": 0.002187465820846549
+      },
+      {
+        "class": "L3.3-3.6",
+        "registros": 1,
+        "masas_positivas": 1,
+        "masa_mediana_g": 203.3,
+        "masa_media_g": 203.3,
+        "porcentaje": 0.002187465820846549
+      },
+      {
+        "class": "CK3/4",
+        "registros": 1,
+        "masas_positivas": 1,
+        "masa_mediana_g": 167.0,
+        "masa_media_g": 167.0,
+        "porcentaje": 0.002187465820846549
+      },
+      {
+        "class": "LL7(?)",
+        "registros": 1,
+        "masas_positivas": 1,
+        "masa_mediana_g": 8.0,
+        "masa_media_g": 8.0,
+        "porcentaje": 0.002187465820846549
+      },
+      {
+        "class": "Iron, IIE?",
+        "registros": 1,
+        "masas_positivas": 1,
+        "masa_mediana_g": 4.6,
+        "masa_media_g": 4.6,
+        "porcentaje": 0.002187465820846549
+      },
+      {
+        "class": "LL3.7-6",
+        "registros": 1,
+        "masas_positivas": 1,
+        "masa_mediana_g": 226.806,
+        "masa_media_g": 226.806,
+        "porcentaje": 0.002187465820846549
+      },
+      {
+        "class": "Iron, IIIE-an",
+        "registros": 1,
+        "masas_positivas": 1,
+        "masa_mediana_g": 58400.0,
+        "masa_media_g": 58400.0,
+        "porcentaje": 0.002187465820846549
+      },
+      {
+        "class": "CH/CBb",
+        "registros": 1,
+        "masas_positivas": 1,
+        "masa_mediana_g": 16000.0,
+        "masa_media_g": 16000.0,
+        "porcentaje": 0.002187465820846549
+      },
+      {
+        "class": "LL(L)3.1",
+        "registros": 1,
+        "masas_positivas": 1,
+        "masa_mediana_g": 3200.0,
+        "masa_media_g": 3200.0,
+        "porcentaje": 0.002187465820846549
+      },
+      {
+        "class": "L/LL-melt rock",
+        "registros": 1,
+        "masas_positivas": 1,
+        "masa_mediana_g": 23.2,
+        "masa_media_g": 23.2,
+        "porcentaje": 0.002187465820846549
+      },
+      {
+        "class": "C3.0-ung",
+        "registros": 1,
+        "masas_positivas": 1,
+        "masa_mediana_g": 286.0,
+        "masa_media_g": 286.0,
+        "porcentaje": 0.002187465820846549
+      },
+      {
+        "class": "L/LL(?)3",
+        "registros": 1,
+        "masas_positivas": 1,
+        "masa_mediana_g": 2.0,
+        "masa_media_g": 2.0,
+        "porcentaje": 0.002187465820846549
+      },
+      {
+        "class": "L/LL",
+        "registros": 1,
+        "masas_positivas": 1,
+        "masa_mediana_g": 11.8,
+        "masa_media_g": 11.8,
+        "porcentaje": 0.002187465820846549
+      },
+      {
+        "class": "LL3-4",
+        "registros": 1,
+        "masas_positivas": 1,
+        "masa_mediana_g": 383.0,
+        "masa_media_g": 383.0,
+        "porcentaje": 0.002187465820846549
+      },
+      {
+        "class": "L(LL)~4",
+        "registros": 1,
+        "masas_positivas": 1,
+        "masa_mediana_g": 331.0,
+        "masa_media_g": 331.0,
+        "porcentaje": 0.002187465820846549
+      },
+      {
+        "class": "L(LL)6",
+        "registros": 1,
+        "masas_positivas": 1,
+        "masa_mediana_g": 265.0,
+        "masa_media_g": 265.0,
+        "porcentaje": 0.002187465820846549
+      },
+      {
+        "class": "L(LL)5",
+        "registros": 1,
+        "masas_positivas": 1,
+        "masa_mediana_g": 1056.0,
+        "masa_media_g": 1056.0,
+        "porcentaje": 0.002187465820846549
+      },
+      {
+        "class": "LL3.00",
+        "registros": 1,
+        "masas_positivas": 1,
+        "masa_mediana_g": 691.0,
+        "masa_media_g": 691.0,
+        "porcentaje": 0.002187465820846549
+      },
+      {
+        "class": "LL3.05",
+        "registros": 1,
+        "masas_positivas": 1,
+        "masa_mediana_g": 128.0,
+        "masa_media_g": 128.0,
+        "porcentaje": 0.002187465820846549
+      },
+      {
+        "class": "L(LL)3.5-3.7",
+        "registros": 1,
+        "masas_positivas": 1,
+        "masa_mediana_g": 1228.1,
+        "masa_media_g": 1228.1,
+        "porcentaje": 0.002187465820846549
+      },
+      {
+        "class": "LL3.1-3.5",
+        "registros": 1,
+        "masas_positivas": 1,
+        "masa_mediana_g": 80.1,
+        "masa_media_g": 80.1,
+        "porcentaje": 0.002187465820846549
+      },
+      {
+        "class": "L(H)3",
+        "registros": 1,
+        "masas_positivas": 1,
+        "masa_mediana_g": 65.7,
+        "masa_media_g": 65.7,
+        "porcentaje": 0.002187465820846549
+      },
+      {
+        "class": "K",
+        "registros": 1,
+        "masas_positivas": 1,
+        "masa_mediana_g": 23.1,
+        "masa_media_g": 23.1,
+        "porcentaje": 0.002187465820846549
+      },
+      {
+        "class": "L/LL3.5",
+        "registros": 1,
+        "masas_positivas": 1,
+        "masa_mediana_g": 32.4,
+        "masa_media_g": 32.4,
+        "porcentaje": 0.002187465820846549
+      }
+    ],
+    "P5_histograma": [
+      {
+        "log10_desde": -2.0,
+        "log10_hasta": -1.755546218740409,
+        "registros": 3
+      },
+      {
+        "log10_desde": -1.755546218740409,
+        "log10_hasta": -1.511092437480818,
+        "registros": 2
+      },
+      {
+        "log10_desde": -1.511092437480818,
+        "log10_hasta": -1.266638656221227,
+        "registros": 2
+      },
+      {
+        "log10_desde": -1.266638656221227,
+        "log10_hasta": -1.022184874961636,
+        "registros": 8
+      },
+      {
+        "log10_desde": -1.022184874961636,
+        "log10_hasta": -0.7777310937020445,
+        "registros": 48
+      },
+      {
+        "log10_desde": -0.7777310937020445,
+        "log10_hasta": -0.5332773124424532,
+        "registros": 130
+      },
+      {
+        "log10_desde": -0.5332773124424532,
+        "log10_hasta": -0.2888235311828622,
+        "registros": 554
+      },
+      {
+        "log10_desde": -0.2888235311828622,
+        "log10_hasta": -0.04436974992327114,
+        "registros": 1058
+      },
+      {
+        "log10_desde": -0.04436974992327114,
+        "log10_hasta": 0.2000840313363201,
+        "registros": 1650
+      },
+      {
+        "log10_desde": 0.2000840313363201,
+        "log10_hasta": 0.444537812595911,
+        "registros": 2232
+      },
+      {
+        "log10_desde": 0.444537812595911,
+        "log10_hasta": 0.6889915938555022,
+        "registros": 3123
+      },
+      {
+        "log10_desde": 0.6889915938555022,
+        "log10_hasta": 0.9334453751150935,
+        "registros": 3817
+      },
+      {
+        "log10_desde": 0.9334453751150935,
+        "log10_hasta": 1.177899156374684,
+        "registros": 4288
+      },
+      {
+        "log10_desde": 1.177899156374684,
+        "log10_hasta": 1.422352937634276,
+        "registros": 4330
+      },
+      {
+        "log10_desde": 1.422352937634276,
+        "log10_hasta": 1.666806718893866,
+        "registros": 3947
+      },
+      {
+        "log10_desde": 1.666806718893866,
+        "log10_hasta": 1.911260500153458,
+        "registros": 3677
+      },
+      {
+        "log10_desde": 1.911260500153458,
+        "log10_hasta": 2.155714281413049,
+        "registros": 3435
+      },
+      {
+        "log10_desde": 2.155714281413049,
+        "log10_hasta": 2.40016806267264,
+        "registros": 3027
+      },
+      {
+        "log10_desde": 2.40016806267264,
+        "log10_hasta": 2.644621843932231,
+        "registros": 2680
+      },
+      {
+        "log10_desde": 2.644621843932231,
+        "log10_hasta": 2.889075625191822,
+        "registros": 1962
+      },
+      {
+        "log10_desde": 2.889075625191822,
+        "log10_hasta": 3.133529406451413,
+        "registros": 1491
+      },
+      {
+        "log10_desde": 3.133529406451413,
+        "log10_hasta": 3.377983187711004,
+        "registros": 1083
+      },
+      {
+        "log10_desde": 3.377983187711004,
+        "log10_hasta": 3.622436968970596,
+        "registros": 796
+      },
+      {
+        "log10_desde": 3.622436968970596,
+        "log10_hasta": 3.866890750230187,
+        "registros": 601
+      },
+      {
+        "log10_desde": 3.866890750230187,
+        "log10_hasta": 4.111344531489777,
+        "registros": 448
+      },
+      {
+        "log10_desde": 4.111344531489777,
+        "log10_hasta": 4.355798312749369,
+        "registros": 360
+      },
+      {
+        "log10_desde": 4.355798312749369,
+        "log10_hasta": 4.60025209400896,
+        "registros": 231
+      },
+      {
+        "log10_desde": 4.60025209400896,
+        "log10_hasta": 4.844705875268551,
+        "registros": 198
+      },
+      {
+        "log10_desde": 4.844705875268551,
+        "log10_hasta": 5.089159656528143,
+        "registros": 139
+      },
+      {
+        "log10_desde": 5.089159656528143,
+        "log10_hasta": 5.333613437787733,
+        "registros": 85
+      },
+      {
+        "log10_desde": 5.333613437787733,
+        "log10_hasta": 5.578067219047324,
+        "registros": 57
+      },
+      {
+        "log10_desde": 5.578067219047324,
+        "log10_hasta": 5.822521000306915,
+        "registros": 32
+      },
+      {
+        "log10_desde": 5.822521000306915,
+        "log10_hasta": 6.066974781566506,
+        "registros": 24
+      },
+      {
+        "log10_desde": 6.066974781566506,
+        "log10_hasta": 6.311428562826098,
+        "registros": 18
+      },
+      {
+        "log10_desde": 6.311428562826098,
+        "log10_hasta": 6.555882344085688,
+        "registros": 9
+      },
+      {
+        "log10_desde": 6.555882344085688,
+        "log10_hasta": 6.800336125345281,
+        "registros": 5
+      },
+      {
+        "log10_desde": 6.800336125345281,
+        "log10_hasta": 7.044789906604871,
+        "registros": 4
+      },
+      {
+        "log10_desde": 7.044789906604871,
+        "log10_hasta": 7.289243687864461,
+        "registros": 2
+      },
+      {
+        "log10_desde": 7.289243687864461,
+        "log10_hasta": 7.533697469124053,
+        "registros": 7
+      },
+      {
+        "log10_desde": 7.533697469124053,
+        "log10_hasta": 7.778151250383644,
+        "registros": 3
+      }
+    ],
+    "P5_estadisticas": [
+      {
+        "estadistica": "Registros",
+        "valor": 45566.0,
+        "unidad": "registros"
+      },
+      {
+        "estadistica": "Media",
+        "valor": 13283.6152095422,
+        "unidad": "g"
+      },
+      {
+        "estadistica": "Desviación estándar",
+        "valor": 575108.6813361832,
+        "unidad": "g"
+      },
+      {
+        "estadistica": "Mínimo",
+        "valor": 0.01,
+        "unidad": "g"
+      },
+      {
+        "estadistica": "Percentil 25",
+        "valor": 7.2,
+        "unidad": "g"
+      },
+      {
+        "estadistica": "Mediana",
+        "valor": 32.695,
+        "unidad": "g"
+      },
+      {
+        "estadistica": "Percentil 75",
+        "valor": 202.8,
+        "unidad": "g"
+      },
+      {
+        "estadistica": "Percentil 90",
+        "valor": 1110.3,
+        "unidad": "g"
+      },
+      {
+        "estadistica": "Percentil 99",
+        "valor": 50600.0,
+        "unidad": "g"
+      },
+      {
+        "estadistica": "Máximo",
+        "valor": 60000000.0,
+        "unidad": "g"
+      }
+    ],
+    "P6_masa_por_tipo": [
+      {
+        "tipo_registro": "Encontrado",
+        "registros": 44491,
+        "masas_positivas": 44491,
+        "masa_mediana_g": 30.54,
+        "masa_media_g": 12467.24488071745,
+        "porcentaje": 97.64078479568099,
+        "p25_g": 6.97,
+        "p75_g": 178.35
+      },
+      {
+        "tipo_registro": "Visto caer",
+        "registros": 1075,
+        "masas_positivas": 1075,
+        "masa_mediana_g": 2800.0,
+        "masa_media_g": 47070.71502325581,
+        "porcentaje": 2.35921520431901,
+        "p25_g": 686.0,
+        "p75_g": 10450.0
+      }
+    ],
+    "P7_mayores_masas": [
+      {
+        "id": 11890,
+        "name": "Hoba",
+        "class": "Iron, IVB",
+        "tipo_registro": "Encontrado",
+        "anio": 1920,
+        "mass": 60000000,
+        "masa_kg": 60000,
+        "masa_t": 60.0
+      },
+      {
+        "id": 5262,
+        "name": "Cape York",
+        "class": "Iron, IIIAB",
+        "tipo_registro": "Encontrado",
+        "anio": 1818,
+        "mass": 58200000,
+        "masa_kg": 58200,
+        "masa_t": 58.2
+      },
+      {
+        "id": 5247,
+        "name": "Campo del Cielo",
+        "class": "Iron, IAB-MG",
+        "tipo_registro": "Encontrado",
+        "anio": 1575,
+        "mass": 50000000,
+        "masa_kg": 50000,
+        "masa_t": 50.0
+      },
+      {
+        "id": 5257,
+        "name": "Canyon Diablo",
+        "class": "Iron, IAB-MG",
+        "tipo_registro": "Encontrado",
+        "anio": 1891,
+        "mass": 30000000,
+        "masa_kg": 30000,
+        "masa_t": 30.0
+      },
+      {
+        "id": 2335,
+        "name": "Armanty",
+        "class": "Iron, IIIE",
+        "tipo_registro": "Encontrado",
+        "anio": 1898,
+        "mass": 28000000,
+        "masa_kg": 28000,
+        "masa_t": 28.0
+      },
+      {
+        "id": 10912,
+        "name": "Gibeon",
+        "class": "Iron, IVA",
+        "tipo_registro": "Encontrado",
+        "anio": 1836,
+        "mass": 26000000,
+        "masa_kg": 26000,
+        "masa_t": 26.0
+      },
+      {
+        "id": 5363,
+        "name": "Chupaderos",
+        "class": "Iron, IIIAB",
+        "tipo_registro": "Encontrado",
+        "anio": 1852,
+        "mass": 24300000,
+        "masa_kg": 24300,
+        "masa_t": 24.3
+      },
+      {
+        "id": 16852,
+        "name": "Mundrabilla",
+        "class": "Iron, IAB-ung",
+        "tipo_registro": "Encontrado",
+        "anio": 1911,
+        "mass": 24000000,
+        "masa_kg": 24000,
+        "masa_t": 24.0
+      },
+      {
+        "id": 23593,
+        "name": "Sikhote-Alin",
+        "class": "Iron, IIAB",
+        "tipo_registro": "Visto caer",
+        "anio": 1947,
+        "mass": 23000000,
+        "masa_kg": 23000,
+        "masa_t": 23.0
+      },
+      {
+        "id": 4919,
+        "name": "Bacubirito",
+        "class": "Iron, ungrouped",
+        "tipo_registro": "Encontrado",
+        "anio": 1863,
+        "mass": 22000000,
+        "masa_kg": 22000,
+        "masa_t": 22.0
+      }
+    ],
+    "P8_asociacion": [
+      {
+        "tipo_registro": "Encontrado",
+        "registros": 44203,
+        "rho_spearman": 0.04912104557297153
+      },
+      {
+        "tipo_registro": "Visto caer",
+        "registros": 1040,
+        "rho_spearman": 0.02557528690565251
+      }
+    ],
+    "P9_clases_conteos": [
+      {
+        "clase_grafico": "L6",
+        "1900": 22,
+        "1910": 27,
+        "1920": 26,
+        "1930": 49,
+        "1940": 35,
+        "1950": 30,
+        "1960": 58,
+        "1970": 739,
+        "1980": 1336,
+        "1990": 2742,
+        "2000": 2792,
+        "2010": 321
+      },
+      {
+        "clase_grafico": "H5",
+        "1900": 13,
+        "1910": 12,
+        "1920": 20,
+        "1930": 35,
+        "1940": 28,
+        "1950": 30,
+        "1960": 69,
+        "1970": 903,
+        "1980": 1664,
+        "1990": 1797,
+        "2000": 2277,
+        "2010": 209
+      },
+      {
+        "clase_grafico": "L5",
+        "1900": 9,
+        "1910": 8,
+        "1920": 6,
+        "1930": 17,
+        "1940": 11,
+        "1950": 12,
+        "1960": 24,
+        "1970": 96,
+        "1980": 219,
+        "1990": 1110,
+        "2000": 3088,
+        "2010": 148
+      },
+      {
+        "clase_grafico": "H6",
+        "1900": 4,
+        "1910": 5,
+        "1920": 4,
+        "1930": 22,
+        "1940": 13,
+        "1950": 9,
+        "1960": 27,
+        "1970": 537,
+        "1980": 729,
+        "1990": 1210,
+        "2000": 1724,
+        "2010": 186
+      },
+      {
+        "clase_grafico": "H4",
+        "1900": 6,
+        "1910": 10,
+        "1920": 7,
+        "1930": 34,
+        "1940": 10,
+        "1950": 16,
+        "1960": 39,
+        "1970": 869,
+        "1980": 1287,
+        "1990": 843,
+        "2000": 898,
+        "2010": 155
+      },
+      {
+        "clase_grafico": "LL5",
+        "1900": 0,
+        "1910": 2,
+        "1920": 1,
+        "1930": 3,
+        "1940": 2,
+        "1950": 0,
+        "1960": 5,
+        "1970": 15,
+        "1980": 25,
+        "1990": 1506,
+        "2000": 1110,
+        "2010": 85
+      },
+      {
+        "clase_grafico": "LL6",
+        "1900": 3,
+        "1910": 1,
+        "1920": 3,
+        "1930": 8,
+        "1940": 3,
+        "1950": 3,
+        "1960": 6,
+        "1970": 221,
+        "1980": 178,
+        "1990": 284,
+        "2000": 1172,
+        "2010": 145
+      },
+      {
+        "clase_grafico": "L4",
+        "1900": 0,
+        "1910": 4,
+        "1920": 5,
+        "1930": 5,
+        "1940": 8,
+        "1950": 4,
+        "1960": 18,
+        "1970": 154,
+        "1980": 158,
+        "1990": 232,
+        "2000": 562,
+        "2010": 61
+      },
+      {
+        "clase_grafico": "Otras clases",
+        "1900": 82,
+        "1910": 85,
+        "1920": 87,
+        "1930": 136,
+        "1940": 86,
+        "1950": 108,
+        "1960": 151,
+        "1970": 1435,
+        "1980": 1226,
+        "1990": 1895,
+        "2000": 4133,
+        "2010": 653
+      }
+    ],
+    "P9_clases_pct": [
+      {
+        "clase_grafico": "L6",
+        "1900": 15.8273381294964,
+        "1910": 17.53246753246753,
+        "1920": 16.35220125786163,
+        "1930": 15.85760517799353,
+        "1940": 17.85714285714286,
+        "1950": 14.15094339622642,
+        "1960": 14.6095717884131,
+        "1970": 14.87220768766351,
+        "1980": 19.58369979478159,
+        "1990": 23.5992770462174,
+        "2000": 15.724262221221,
+        "2010": 16.3525216505349
+      },
+      {
+        "clase_grafico": "H5",
+        "1900": 9.352517985611511,
+        "1910": 7.792207792207792,
+        "1920": 12.57861635220126,
+        "1930": 11.32686084142395,
+        "1940": 14.28571428571428,
+        "1950": 14.15094339622642,
+        "1960": 17.38035264483627,
+        "1970": 18.17267055745623,
+        "1980": 24.39167399589563,
+        "1990": 15.46604699199587,
+        "2000": 12.82383419689119,
+        "2010": 10.64696892511462
+      },
+      {
+        "clase_grafico": "L5",
+        "1900": 6.474820143884892,
+        "1910": 5.194805194805195,
+        "1920": 3.773584905660377,
+        "1930": 5.501618122977346,
+        "1940": 5.612244897959184,
+        "1950": 5.660377358490567,
+        "1960": 6.045340050377834,
+        "1970": 1.931978265244516,
+        "1980": 3.210202286719437,
+        "1990": 9.553317841466564,
+        "2000": 17.39130434782609,
+        "2010": 7.539480387162506
+      },
+      {
+        "clase_grafico": "H6",
+        "1900": 2.877697841726619,
+        "1910": 3.246753246753246,
+        "1920": 2.515723270440252,
+        "1930": 7.119741100323624,
+        "1940": 6.63265306122449,
+        "1950": 4.245283018867925,
+        "1960": 6.801007556675064,
+        "1970": 10.80700342121151,
+        "1980": 10.68601583113456,
+        "1990": 10.41397710646355,
+        "2000": 9.709394007659384,
+        "2010": 9.475292919001529
+      },
+      {
+        "clase_grafico": "H4",
+        "1900": 4.316546762589928,
+        "1910": 6.493506493506493,
+        "1920": 4.40251572327044,
+        "1930": 11.00323624595469,
+        "1940": 5.102040816326531,
+        "1950": 7.547169811320755,
+        "1960": 9.82367758186398,
+        "1970": 17.48842825518213,
+        "1980": 18.86543535620053,
+        "1990": 7.255357603924606,
+        "2000": 5.057445370578959,
+        "2010": 7.896077432501274
+      },
+      {
+        "clase_grafico": "LL5",
+        "1900": 0.0,
+        "1910": 1.298701298701299,
+        "1920": 0.628930817610063,
+        "1930": 0.9708737864077669,
+        "1940": 1.020408163265306,
+        "1950": 0.0,
+        "1960": 1.259445843828715,
+        "1970": 0.3018716039444557,
+        "1980": 0.3664614482556435,
+        "1990": 12.96152853085463,
+        "2000": 6.251407974769092,
+        "2010": 4.330106979113602
+      },
+      {
+        "clase_grafico": "LL6",
+        "1900": 2.158273381294964,
+        "1910": 0.6493506493506493,
+        "1920": 1.886792452830189,
+        "1930": 2.588996763754046,
+        "1940": 1.530612244897959,
+        "1950": 1.415094339622642,
+        "1960": 1.511335012594458,
+        "1970": 4.447574964781646,
+        "1980": 2.609205511580182,
+        "1990": 2.444272312591445,
+        "2000": 6.600585717503943,
+        "2010": 7.386653082017321
+      },
+      {
+        "clase_grafico": "L4",
+        "1900": 0.0,
+        "1910": 2.597402597402597,
+        "1920": 3.144654088050315,
+        "1930": 1.618122977346278,
+        "1940": 4.081632653061225,
+        "1950": 1.886792452830189,
+        "1960": 4.534005037783375,
+        "1970": 3.099215133829745,
+        "1980": 2.316036352975667,
+        "1990": 1.996729494793011,
+        "2000": 3.165127280919126,
+        "2010": 3.107488537952114
+      },
+      {
+        "clase_grafico": "Otras clases",
+        "1900": 58.99280575539569,
+        "1910": 55.1948051948052,
+        "1920": 54.71698113207547,
+        "1930": 44.01294498381877,
+        "1940": 43.87755102040816,
+        "1950": 50.9433962264151,
+        "1960": 38.0352644836272,
+        "1970": 28.87905011068625,
+        "1980": 17.97126942245676,
+        "1990": 16.30949307169292,
+        "2000": 23.27663888263122,
+        "2010": 33.26541008660214
+      }
+    ],
+    "P10_peru_candidatos": [
+      {
+        "id": 45817,
+        "name": "Carancas",
+        "class": "H4-5",
+        "mass": 342,
+        "tipo_registro": "Visto caer",
+        "anio": 2007,
+        "lat": -16.66444,
+        "long": -69.04389,
+        "dentro_peru_cartografia": false,
+        "dentro_peru_10m": true,
+        "peru_analisis": true,
+        "criterio_pais": "Perú confirmado por Arizona State University y Natural Earth 1:10m"
+      },
+      {
+        "id": 51559,
+        "name": "Daule",
+        "class": "L5",
+        "mass": 6580,
+        "tipo_registro": "Visto caer",
+        "anio": 2008,
+        "lat": -1.87089,
+        "long": -79.95756,
+        "dentro_peru_cartografia": false,
+        "dentro_peru_10m": false,
+        "peru_analisis": false,
+        "criterio_pais": "Cartografía Natural Earth 1:10m (aproximada)"
+      },
+      {
+        "id": 44877,
+        "name": "Cerro La Tiza",
+        "class": "H4",
+        "mass": 3740,
+        "tipo_registro": "Encontrado",
+        "anio": 2002,
+        "lat": -14.53321,
+        "long": -75.77511,
+        "dentro_peru_cartografia": true,
+        "dentro_peru_10m": true,
+        "peru_analisis": true,
+        "criterio_pais": "Cartografía Natural Earth 1:10m (aproximada)"
+      },
+      {
+        "id": 23797,
+        "name": "Tambo Quemado",
+        "class": "Iron, IIIAB",
+        "mass": 141000,
+        "tipo_registro": "Encontrado",
+        "anio": 1950,
+        "lat": -14.66667,
+        "long": -74.5,
+        "dentro_peru_cartografia": true,
+        "dentro_peru_10m": true,
+        "peru_analisis": true,
+        "criterio_pais": "Cartografía Natural Earth 1:10m (aproximada)"
+      }
+    ]
+  }
+}

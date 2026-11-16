@@ -1,0 +1,33 @@
+import { chromium } from 'playwright';
+import assert from 'node:assert/strict';
+import fs from 'node:fs/promises';
+const browser = await chromium.launch();
+const page = await browser.newPage({viewport:{width:1600,height:1000}});
+await page.goto('http://127.0.0.1:5182/#/lamina-1');
+await page.waitForSelector('.globe-wrap canvas');
+await page.waitForTimeout(1200);
+const globe = page.locator('.globe-wrap canvas');
+const before = await globe.screenshot();
+await page.waitForTimeout(250);
+assert(!before.equals(await globe.screenshot()), 'El globo debe girar');
+await page.getByRole('button',{name:'Pausar globo',exact:true}).click();
+await page.waitForTimeout(150);
+const still=await globe.screenshot();
+await page.waitForTimeout(250);
+assert(still.equals(await globe.screenshot()), 'La pausa debe detener el globo');
+await page.locator('section.present .chapter-nav button').nth(1).click();
+await page.waitForSelector('section.present .slide[data-active="true"]');
+await page.keyboard.press('ArrowRight');
+assert.equal(await page.evaluate(()=>Reveal.getIndices().h),4,'Las flechas funcionan después de usar el menú');
+await page.goto('http://127.0.0.1:5182/#/lamina-1');
+await page.waitForSelector('.globe-wrap canvas');
+await page.waitForTimeout(700);
+await page.screenshot({path:'Vista_previa.png'});
+for(const i of [7,11,15]) {
+ await page.evaluate(i=>Reveal.slide(i),i);
+ await page.waitForTimeout(700);
+ await page.screenshot({path:`verificacion/slide-${String(i+1).padStart(2,'0')}.png`});
+}
+await fs.writeFile('verificacion/movimiento.json',JSON.stringify({globeRotates:true,globePauses:true,keyboardAfterNavigation:true}));
+await browser.close();
+console.log('Giro, pausa, teclado y vistas finales verificados.');

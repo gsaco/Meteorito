@@ -1,0 +1,27 @@
+{
+  "name": "presentacion-meteoritos",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "node scripts/compilar.mjs",
+    "test:ui": "node scripts/verificar.mjs"
+  },
+  "dependencies": {
+    "@fontsource-variable/space-grotesk": "^5.3.0",
+    "@fontsource/ibm-plex-mono": "^5.3.0",
+    "d3-geo": "^3.1.2",
+    "lucide-react": "^1.72.0",
+    "motion": "^14.13.0",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^6.3.0",
+    "playwright": "^1.62.1",
+    "vite": "^8.3.8"
+  },
+  "engines": {
+    "node": ">=22.12.0"
+  }
+}

@@ -1,0 +1,191 @@
+---
+pagetitle: "Meteoritos: datos y exploración interactiva"
+lang: es
+format:
+  revealjs:
+    theme: dark
+    width: 1440
+    height: 810
+    margin: 0
+    min-scale: 0.1
+    max-scale: 2
+    center: false
+    auto-stretch: false
+    transition: fade
+    background-transition: fade
+    slide-number: false
+    controls: true
+    controls-layout: edges
+    progress: true
+    menu: true
+    overview: true
+    hash: true
+    navigation-mode: linear
+    title-slide: false
+    css: theme.css
+    include-after-body: widgets.html
+    html-math-method: plain
+    embed-resources: false
+    output-file: index.html
+execute:
+  enabled: false
+---
+## METEORITOS {#lamina-1 .meteoritos-frame}
+
+```{=html}
+<div data-react-slide="0" class="react-mount"><div class="loading-slide"><h2>METEORITOS</h2><p>Análisis de un catálogo histórico y desarrollo de un atlas interactivo</p></div></div>
+```
+
+::: {.notes}
+Presentar el proyecto del curso Herramientas de Programación con Python. Duración prevista: 20–25 minutos. Los datos corresponden a la copia histórica entregada, no a una descarga actualizada. Integrantes: Richard Michel Altamirano Galvez, Gabriel Andreas Saco Alvarado y Fina Rosmery Pretil Pocomucha. La portada usa una proyección ortográfica D3 con las 32 186 coordenadas utilizables, incluyendo registros sin año. El giro se puede pausar o controlar arrastrando. Fuente cartográfica: Natural Earth. Docente: Uwe Rojas.
+:::
+
+## Encontrados y vistos caer {#lamina-2 .meteoritos-frame}
+
+```{=html}
+<div data-react-slide="1" class="react-mount"><div class="loading-slide"><h2>Encontrados y vistos caer</h2><p>¿Qué patrones geográficos, temporales y de masa aparecen en el catálogo?</p></div></div>
+```
+
+::: {.notes}
+Explicar por qué separar Found y Fell cambia la interpretación. El catálogo documenta recuperaciones y observaciones, no una tasa mundial de impactos. Fuente: informe, sección 2; NASA, Meteors & Meteorites Facts, https://science.nasa.gov/solar-system/meteors-meteorites/facts/
+:::
+
+## La unidad de análisis es un registro {#lamina-3 .meteoritos-frame}
+
+```{=html}
+<div data-react-slide="2" class="react-mount"><div class="loading-slide"><h2>La unidad de análisis es un registro</h2><p>Una tabla principal, identificada por id.</p></div></div>
+```
+
+::: {.notes}
+El registro Meridiani Planum corresponde a Marte y se excluye solo de la muestra terrestre. No equiparar cada registro con un impacto independiente. Fuente: CSV original y Excel, Calidad. TidyTuesday https://github.com/rfordatascience/tidytuesday/tree/main/data/2019/2019-06-11
+:::
+
+## La limpieza conserva la trazabilidad {#lamina-4 .meteoritos-frame}
+
+```{=html}
+<div data-react-slide="3" class="react-mount"><div class="loading-slide"><h2>La limpieza conserva la trazabilidad</h2><p></p></div></div>
+```
+
+::: {.notes}
+Código pedagógico simplificado de las reglas efectivas del notebook. La base preparada conserva las 45 716 filas. Las muestras se filtran por pregunta. No se imputan coordenadas ni masas. Fuente: notebook y hoja Calidad.
+:::
+
+## Flujo de trabajo del proyecto {#lamina-5 .meteoritos-frame}
+
+```{=html}
+<div data-react-slide="4" class="react-mount"><div class="loading-slide"><h2>Flujo de trabajo del proyecto</h2><p></p></div></div>
+```
+
+::: {.notes}
+El proyecto tiene una sola tabla de observaciones. El diccionario y Natural Earth son recursos auxiliares. Por ello, el requisito condicional de tres merges no aplica. Los cálculos alimentan el notebook, el informe y el atlas. Seguir las seis etapas de la consigna. Unión: no aplica a una única tabla de observaciones; comprobar id y conservación de filas. P9 ahora incluye melt, exportación larga y reconstrucción verificada.
+:::
+
+## Funciones pequeñas, resultados verificables {#lamina-6 .meteoritos-frame}
+
+```{=html}
+<div data-react-slide="5" class="react-mount"><div class="loading-slide"><h2>Funciones pequeñas, resultados verificables</h2><p></p></div></div>
+```
+
+::: {.notes}
+Explicar parámetros, retorno y reutilización. No es una transcripción literal de la función más completa del notebook. Se utilizan cinco funciones principales y rutinas cartográficas. Fuente: anexo B y notebook.
+:::
+
+## P1 · La cobertura geográfica es desigual {#lamina-7 .meteoritos-frame}
+
+```{=html}
+<div data-react-slide="6" class="react-mount"><div class="loading-slide"><h2>P1 · La cobertura geográfica es desigual</h2><p>La cobertura alcanza 99,0 % en Fell y 69,7 % en Found.</p></div></div>
+```
+
+::: {.notes}
+Fuente: hoja P1_tipo_y_mapa. Mapa Equal Earth con Cartopy y Natural Earth. La densidad refleja observación y recuperación, además de disponibilidad de coordenadas. https://www.naturalearthdata.com/; https://cartopy.readthedocs.io/
+:::
+
+## P2 · La Antártida concentra los hallazgos {#lamina-8 .meteoritos-frame}
+
+```{=html}
+<div data-react-slide="7" class="react-mount"><div class="loading-slide"><h2>P2 · La Antártida concentra los hallazgos</h2><p>48,3 % de la base terrestre y 68,7 % de los registros mapeables.</p></div></div>
+```
+
+::: {.notes}
+La conservación, exposición y búsqueda organizada ayudan a interpretar la concentración. El catálogo no permite atribuir causalmente cuánto aporta cada mecanismo. Fuente: P2_antartida_conteos; Tollenaar et al. (2022), https://doi.org/10.1126/sciadv.abj8138
+:::
+
+## P3 · El crecimiento describe registros {#lamina-9 .meteoritos-frame}
+
+```{=html}
+<div data-react-slide="8" class="react-mount"><div class="loading-slide"><h2>P3 · El crecimiento describe registros</h2><p>Las campañas de recuperación influyen en la serie histórica.</p></div></div>
+```
+
+::: {.notes}
+Fuente: hoja P3_decadas. El gráfico conserva Found y Fell separados. Los 60 registros anteriores a 1800 permanecen en Excel. No interpretar la serie como frecuencia anual de impactos.
+:::
+
+## P4 · L6 es la clase más frecuente {#lamina-10 .meteoritos-frame}
+
+```{=html}
+<div data-react-slide="9" class="react-mount"><div class="loading-slide"><h2>P4 · L6 es la clase más frecuente</h2><p>L6 representa 18,2 % de los 45 715 registros terrestres.</p></div></div>
+```
+
+::: {.notes}
+Fuente: hoja P4_clases. Los códigos se conservan tal como aparecen en la fuente. El patrón depende de clasificación, preservación y muestreo. Tipos: ASU, https://meteorites.asu.edu/meteorite-types
+:::
+
+## P5 · La masa tiene una cola muy larga {#lamina-11 .meteoritos-frame}
+
+```{=html}
+<div data-react-slide="10" class="react-mount"><div class="loading-slide"><h2>P5 · La masa tiene una cola muy larga</h2><p>La media asciende a 13 283,62 g por la presencia de valores muy grandes.</p></div></div>
+```
+
+::: {.notes}
+Fuente: P5_histograma y P5_estadisticas. Son 40 intervalos. La transformación permite observar varios órdenes de magnitud sin sumar constantes ni reemplazar ceros.
+:::
+
+## P6 · Las masas típicas difieren {#lamina-12 .meteoritos-frame}
+
+```{=html}
+<div data-react-slide="11" class="react-mount"><div class="loading-slide"><h2>P6 · Las masas típicas difieren</h2><p>Mediana Fell: 2 800 g. Mediana Found: 30,54 g.</p></div></div>
+```
+
+::: {.notes}
+Fuente: P6_masa_por_tipo. Los cuartiles y la mediana describen diferencias entre tipos. La lámina conserva el diagrama de caja del análisis, incluidos los valores atípicos. Sesgos de observación y recuperación impiden interpretar la diferencia como efecto causal.
+:::
+
+## P7 · Hoba encabeza el ranking {#lamina-13 .meteoritos-frame}
+
+```{=html}
+<div data-react-slide="12" class="react-mount"><div class="loading-slide"><h2>P7 · Hoba encabeza el ranking</h2><p>Los diez registros mayores reúnen 57,1 % de la masa positiva.</p></div></div>
+```
+
+::: {.notes}
+Fuente: P7_mayores_masas y P5_estadisticas. El gráfico usa toneladas. Cada entrada puede referirse a material recuperado y no necesariamente a un único fragmento.
+:::
+
+## P8 · Año y masa tienen poca asociación {#lamina-14 .meteoritos-frame}
+
+```{=html}
+<div data-react-slide="13" class="react-mount"><div class="loading-slide"><h2>P8 · Año y masa tienen poca asociación</h2><p>Found: 0,049. Fell: 0,026.</p></div></div>
+```
+
+::: {.notes}
+Fuente: P8_asociacion. Spearman mide asociación monótona. La lámina muestra las nubes de puntos completas, con masa logarítmica. No sustenta causalidad ni ausencia de toda relación posible.
+:::
+
+## P9 · La composición cambia entre décadas {#lamina-15 .meteoritos-frame}
+
+```{=html}
+<div data-react-slide="14" class="react-mount"><div class="loading-slide"><h2>P9 · La composición cambia entre décadas</h2><p>En 1970, L5 representaba 1,9 %. El cambio es de 15,5 puntos porcentuales.</p></div></div>
+```
+
+::: {.notes}
+Fuente: P9_clases_pct. Cada columna suma 100 %. No son porcentajes del catálogo total. Una mayor participación puede responder a campañas, clasificación y lugares de recuperación.
+:::
+
+## P10 · Tres registros corresponden al Perú {#lamina-16 .meteoritos-frame}
+
+```{=html}
+<div data-react-slide="15" class="react-mount"><div class="loading-slide"><h2>P10 · Tres registros corresponden al Perú</h2><p>También se identifican Cerro La Tiza y Tambo Quemado.</p></div></div>
+```
+
+::: {.notes}
+Fuente: P10_peru_candidatos. La frontera 1:110 millones excluía erróneamente Carancas. Se conserva esa comprobación para auditoría y se usa 1:10 millones junto con ASU. Daule corresponde a Ecuador. https://meteorites.asu.edu/news/carancas
+:::
